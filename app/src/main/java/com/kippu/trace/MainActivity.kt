@@ -13,8 +13,8 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesomeMotion
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     data object Home : Screen("home", "日子", Icons.Default.DateRange)
-    data object Detail : Screen("detail/{eventId}", "详情", Icons.Default.Info) {
+    data object Detail : Screen("detail/{eventId}", "详情", Icons.Default.AutoAwesomeMotion) {
         fun createRoute(eventId: Long) = "detail/$eventId"
     }
     data object Settings : Screen("settings", "我的", Icons.Default.Settings)
@@ -140,37 +140,36 @@ fun MainApp(
                 tonalElevation = 0.dp,
                 modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
             ) {
-                val items = listOf(Screen.Home, Screen.Settings)
-                items.forEach { screen ->
-                    val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                    CustomNavBarItem(
-                        icon = { NavIconWithPulse(icon = screen.icon, isSelected = isSelected) },
-                        label = { 
-                            Text(
-                                text = screen.label,
-                                color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelMedium,
-                            ) 
-                        },
-                        selected = isSelected,
-                        onClick = {
-                            if (!isSelected) {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                // Item 1: Home
+                val isHomeSelected = currentDestination?.hierarchy?.any { it.route == Screen.Home.route } == true
+                CustomNavBarItem(
+                    icon = { NavIconWithPulse(icon = Screen.Home.icon, isSelected = isHomeSelected) },
+                    label = { 
+                        Text(
+                            text = Screen.Home.label,
+                            color = if (isHomeSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelMedium,
+                        ) 
+                    },
+                    selected = isHomeSelected,
+                    onClick = {
+                        if (!isHomeSelected) {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         }
-                    )
-                }
-                
+                    }
+                )
+
+                // Item 2: Detail
                 val isDetailSelected = (currentDestination?.route?.startsWith("detail") == true)
                 CustomNavBarItem(
                     icon = { NavIconWithPulse(icon = Screen.Detail.icon, isSelected = isDetailSelected) },
                     label = { 
                         Text(
-                            "详情", 
+                            Screen.Detail.label, 
                             color = if (isDetailSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelMedium
                         ) 
@@ -178,7 +177,34 @@ fun MainApp(
                     selected = isDetailSelected,
                     onClick = {
                         if (events.isNotEmpty()) {
-                            navController.navigate(Screen.Detail.createRoute(events.first().id))
+                            navController.navigate(Screen.Detail.createRoute(events.first().id)) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
+
+                // Item 3: Settings
+                val isSettingsSelected = currentDestination?.hierarchy?.any { it.route == Screen.Settings.route } == true
+                CustomNavBarItem(
+                    icon = { NavIconWithPulse(icon = Screen.Settings.icon, isSelected = isSettingsSelected) },
+                    label = { 
+                        Text(
+                            text = Screen.Settings.label,
+                            color = if (isSettingsSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelMedium,
+                        ) 
+                    },
+                    selected = isSettingsSelected,
+                    onClick = {
+                        if (!isSettingsSelected) {
+                            navController.navigate(Screen.Settings.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
                 )

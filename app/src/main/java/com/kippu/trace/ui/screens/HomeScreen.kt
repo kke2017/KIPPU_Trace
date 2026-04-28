@@ -36,7 +36,7 @@ fun HomeScreen(
     onEventClick: (DateEvent) -> Unit,
     onDeleteEvent: (DateEvent) -> Unit,
 ) {
-    val pinnedEvent = events.find { it.isPinned }
+    val pinnedEvents = events.filter { it.isPinned }
     val otherEvents = events.filter { !it.isPinned }
     
     var eventToDelete by remember { mutableStateOf<DateEvent?>(null) }
@@ -106,21 +106,24 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 120.dp // Increased bottom padding to ensure last item is above nav bar
+                ),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Pinned Card (if any)
-                pinnedEvent?.let {
-                    item(key = "pinned_${it.id}") {
-                        SwipeToDeleteWrapper(
-                            isResetRequested = eventToDelete == null,
-                            onTrashClick = { eventToDelete = it }
-                        ) {
-                            PinnedEventCard(
-                                event = it,
-                                onClick = { onEventClick(it) }
-                            )
-                        }
+                // Pinned Cards List
+                items(pinnedEvents, key = { "pinned_${it.id}" }) { event ->
+                    SwipeToDeleteWrapper(
+                        isResetRequested = eventToDelete == null,
+                        onTrashClick = { eventToDelete = event }
+                    ) {
+                        PinnedEventCard(
+                            event = event,
+                            onClick = { onEventClick(event) }
+                        )
                     }
                 }
 

@@ -23,10 +23,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import coil.compose.AsyncImage
 import com.kippu.trace.model.DateEvent
+import com.kippu.trace.utils.TimeUtils
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 @Composable
 fun DetailScreen(
@@ -93,12 +96,22 @@ fun EventDetailItem(event: DateEvent) {
     val days = ChronoUnit.DAYS.between(LocalDate.now(), targetLocalDate).let { if (it < 0) -it else it }
 
     val animatedDays = remember { Animatable(0f) }
+    var detailedTime by remember { mutableStateOf(TimeUtils.getDetailedTime(event.targetDate)) }
+
     LaunchedEffect(event.id) {
         animatedDays.snapTo(0f)
         animatedDays.animateTo(
             targetValue = days.toFloat(),
             animationSpec = tween(durationMillis = 800)
         )
+    }
+
+    // Ticker for H/M/S
+    LaunchedEffect(event.id) {
+        while (true) {
+            detailedTime = TimeUtils.getDetailedTime(event.targetDate)
+            delay(1000)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -159,6 +172,17 @@ fun EventDetailItem(event: DateEvent) {
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.White.copy(alpha = 0.6f),
                     letterSpacing = 2.sp
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = String.format(Locale.getDefault(), "%02d:%02d:%02d", detailedTime.hours, detailedTime.minutes, detailedTime.seconds),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontFamily = com.kippu.trace.ui.theme.NumberFontFamily,
+                    letterSpacing = 4.sp
                 )
             )
         }

@@ -1,6 +1,5 @@
 package com.kippu.trace.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -15,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
+import com.kippu.trace.utils.TimeUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -30,16 +30,19 @@ fun NormalEventCard(
         .atZone(ZoneId.systemDefault())
         .toLocalDate()
     val today = LocalDate.now()
-    val days = ChronoUnit.DAYS.between(today, targetLocalDate).let { if (it < 0) -it else it }
+    val daysTotal = ChronoUnit.DAYS.between(today, targetLocalDate).let { if (it < 0) -it else it }
+    
+    val relativeTime = TimeUtils.getRelativeTime(event.targetDate)
+    val timeDescription = TimeUtils.formatRelativeTime(relativeTime)
     
     // Semantic prefix
     val prefix = if (event.isFuture) "还有" else "已经"
 
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(100.dp)
-            .clickable { onClick() },
+            .height(100.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -60,8 +63,8 @@ fun NormalEventCard(
                     )
                 )
                 Text(
-                    text = "$prefix $days 天", // In real implementation, we would format to Year/Month/Week/Day
-                    style = MaterialTheme.typography.bodyLarge.copy(
+                    text = "$prefix $timeDescription",
+                    style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.secondary
                     )
                 )
@@ -69,7 +72,7 @@ fun NormalEventCard(
 
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = days.toString(),
+                    text = daysTotal.toString(),
                     style = MaterialTheme.typography.displayMedium.copy(
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 36.sp
