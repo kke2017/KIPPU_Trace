@@ -3,7 +3,11 @@ package com.kippu.trace.ui.screens
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -48,7 +53,7 @@ fun EditorScreen(
     var backgroundUri by remember { mutableStateOf<String?>(null) }
     var isPinned by remember { mutableStateOf(false) }
     var maskOpacity by remember { mutableFloatStateOf(0.4f) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    val showDatePicker = remember { mutableStateOf(false) }
     var mode by remember { mutableStateOf(DisplayMode.COUNT_DOWN) }
 
     val scrollState = rememberScrollState()
@@ -59,29 +64,37 @@ fun EditorScreen(
         uri?.let { backgroundUri = it.toString() }
     }
 
-    val targetLocalDate = Instant.ofEpochMilli(selectedDate).atZone(ZoneId.systemDefault()).toLocalDate()
-    val today = LocalDate.now()
-    val days = ChronoUnit.DAYS.between(today, targetLocalDate).let { if (it < 0) -it else it }
+    val targetLocalDate = remember(selectedDate) {
+        Instant.ofEpochMilli(selectedDate).atZone(ZoneId.systemDefault()).toLocalDate()
+    }
     
-    val isFuture = selectedDate > System.currentTimeMillis()
-    LaunchedEffect(selectedDate) {
-        mode = if (isFuture) DisplayMode.COUNT_DOWN else DisplayMode.ACCUMULATE
+    val days = remember(targetLocalDate) {
+        val today = LocalDate.now()
+        val d = ChronoUnit.DAYS.between(today, targetLocalDate)
+        if (d < 0) -d else d
     }
 
-    if (showDatePicker) {
+    val formattedDate = remember(targetLocalDate) {
+        targetLocalDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    }
+    
+    LaunchedEffect(selectedDate) {
+        mode = if (selectedDate > System.currentTimeMillis()) DisplayMode.COUNT_DOWN else DisplayMode.ACCUMULATE
+    }
+
+    if (showDatePicker.value) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
+
         DatePickerDialog(
-            onDismissRequest = { 
-                showDatePicker = false 
-            },
+            onDismissRequest = { showDatePicker.value = false },
             confirmButton = {
                 TextButton(onClick = {
-                    selectedDate = datePickerState.selectedDateMillis ?: selectedDate
-                    showDatePicker = false
+                    datePickerState.selectedDateMillis?.let { selectedDate = it }
+                    showDatePicker.value = false
                 }) { Text("确定") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("取消") }
+                TextButton(onClick = { showDatePicker.value = false }) { Text("取消") }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -102,7 +115,7 @@ fun EditorScreen(
                         onSave(DateEvent(
                             title = title.ifEmpty { "未命名" },
                             targetDate = selectedDate,
-                            isFuture = isFuture,
+                            isFuture = mode == DisplayMode.COUNT_DOWN,
                             mode = mode,
                             isPinned = isPinned,
                             backgroundUri = backgroundUri,
@@ -135,14 +148,14 @@ fun EditorScreen(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Card(
-                        onClick = { showDatePicker = true },
+                        onClick = { showDatePicker.value = true },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(if (mode == DisplayMode.COUNT_DOWN) "目标日期" else "起始日期", style = MaterialTheme.typography.labelMedium)
-                            Text(targetLocalDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), style = MaterialTheme.typography.titleMedium)
+                            Text(formattedDate, style = MaterialTheme.typography.titleMedium)
                         }
                     }
 
@@ -163,20 +176,10 @@ fun EditorScreen(
                     }
                 }
 
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    SegmentedButton(
-                        selected = mode == DisplayMode.COUNT_DOWN,
-                        onClick = { mode = DisplayMode.COUNT_DOWN },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                        icon = { Icon(Icons.Default.HourglassEmpty, null, Modifier.size(16.dp)) }
-                    ) { Text("倒数模式") }
-                    SegmentedButton(
-                        selected = mode == DisplayMode.ACCUMULATE,
-                        onClick = { mode = DisplayMode.ACCUMULATE },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                        icon = { Icon(Icons.Default.History, null, Modifier.size(16.dp)) }
-                    ) { Text("累计模式") }
-                }
+                ModeSwitcher(
+                    selectedMode = mode,
+                    onModeSelected = { mode = it }
+                )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -210,7 +213,7 @@ fun EditorScreen(
                         event = DateEvent(
                             title = title.ifEmpty { "示例标题" },
                             targetDate = selectedDate,
-                            isFuture = isFuture,
+                            isFuture = mode == DisplayMode.COUNT_DOWN,
                             mode = mode,
                             isPinned = true,
                             backgroundUri = backgroundUri,
@@ -235,13 +238,96 @@ fun EditorScreen(
                             imageUri = backgroundUri,
                             opacity = maskOpacity,
                             isFuture = mode == DisplayMode.COUNT_DOWN,
-                            date = targetLocalDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            date = formattedDate
                         )
                     }
                 }
             }
             
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+fun ModeSwitcher(
+    selectedMode: DisplayMode,
+    onModeSelected: (DisplayMode) -> Unit
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                RoundedCornerShape(26.dp)
+            )
+            .padding(4.dp)
+    ) {
+        val scope = this
+        val indicatorWidth = scope.maxWidth / 2
+        val indicatorOffset by animateDpAsState(
+            targetValue = if (selectedMode == DisplayMode.COUNT_DOWN) 0.dp else indicatorWidth,
+            animationSpec = spring(stiffness = Spring.StiffnessMedium),
+            label = "modeIndicator"
+        )
+
+        // Sliding Indicator
+        Box(
+            modifier = Modifier
+                .offset(x = indicatorOffset)
+                .width(indicatorWidth)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(22.dp))
+        )
+
+        Row(modifier = Modifier.fillMaxSize()) {
+            ModeOption(
+                title = "倒数模式",
+                icon = Icons.Default.HourglassEmpty,
+                selected = selectedMode == DisplayMode.COUNT_DOWN,
+                onClick = { onModeSelected(DisplayMode.COUNT_DOWN) },
+                modifier = Modifier.weight(1f)
+            )
+            ModeOption(
+                title = "累计模式",
+                icon = Icons.Default.History,
+                selected = selectedMode == DisplayMode.ACCUMULATE,
+                onClick = { onModeSelected(DisplayMode.ACCUMULATE) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun ModeOption(
+    title: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) Color.White else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) Color.White else MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

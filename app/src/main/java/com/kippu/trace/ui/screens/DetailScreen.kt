@@ -6,6 +6,7 @@ import android.view.WindowManager
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -33,23 +34,35 @@ fun DetailScreen(
     initialEventId: Long,
     onBack: () -> Unit
 ) {
+    val darkTheme = isSystemInDarkTheme()
     val view = LocalView.current
     if (!view.isInEditMode) {
+        DisposableEffect(darkTheme) {
+            val window = (view.context as Activity).window
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            
+            // Initial state: Force light icons (appearance light = false) for dark immersive background
+            val originalStatusBarLight = insetsController.isAppearanceLightStatusBars
+            val originalNavBarLight = insetsController.isAppearanceLightNavigationBars
+            
+            insetsController.isAppearanceLightStatusBars = false
+            insetsController.isAppearanceLightNavigationBars = false
+            
+            onDispose {
+                // Restore original state when leaving the screen
+                insetsController.isAppearanceLightStatusBars = originalStatusBarLight
+                insetsController.isAppearanceLightNavigationBars = originalNavBarLight
+            }
+        }
+        
         SideEffect {
             val window = (view.context as Activity).window
-            // 1. Force fully transparent status and navigation bars
             window.statusBarColor = android.graphics.Color.TRANSPARENT
             window.navigationBarColor = android.graphics.Color.TRANSPARENT
             
-            // 2. Enable drawing in the cutout (punch hole) area
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
-            
-            // 3. Setup bar icons color (White text/icons for dark immersive background)
-            val controller = WindowCompat.getInsetsController(window, view)
-            controller.isAppearanceLightStatusBars = false
-            controller.isAppearanceLightNavigationBars = false
         }
     }
 
