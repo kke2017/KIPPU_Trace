@@ -234,12 +234,14 @@ fun EditorScreen(
                             .height(500.dp)
                             .clip(RoundedCornerShape(24.dp))
                             .background(Color.Black)
-                    ) {
+                    } else {
                         FullScreenPreviewContent(
                             title = title.ifEmpty { "示例标题" },
                             days = days.toString(),
                             imageUri = backgroundUri,
-                            opacity = maskOpacity
+                            opacity = maskOpacity,
+                            isFuture = isFuture,
+                            date = targetLocalDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                         )
                     }
                 }
@@ -251,7 +253,7 @@ fun EditorScreen(
 }
 
 @Composable
-fun FullScreenPreviewContent(title: String, days: String, imageUri: String?, opacity: Float) {
+fun FullScreenPreviewContent(title: String, days: String, imageUri: String?, opacity: Float, isFuture: Boolean, date: String) {
     Box(modifier = Modifier.fillMaxSize()) {
         if (imageUri != null) {
             AsyncImage(
@@ -267,17 +269,44 @@ fun FullScreenPreviewContent(title: String, days: String, imageUri: String?, opa
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(title, color = Color.White, style = MaterialTheme.typography.titleLarge)
+            val prefix = if (isFuture) "还有" else "已经"
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Light,
+                        letterSpacing = 4.sp
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = prefix,
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             Text(
                 text = days,
                 color = Color.White,
                 style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 72.sp,
+                    fontSize = 120.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = com.kippu.trace.ui.theme.NumberFontFamily
                 )
             )
-            Text("天", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelLarge)
+            
+            val datePrefix = if (isFuture) "距离" else "自从"
+            Text(
+                text = "$datePrefix $date",
+                color = Color.White.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    letterSpacing = 2.sp
+                )
+            )
         }
     }
 }

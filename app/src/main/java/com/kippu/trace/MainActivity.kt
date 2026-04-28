@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,7 +46,9 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home : Screen("home", "日子", Icons.Default.DateRange)
-    object Detail : Screen("detail", "详情", Icons.Default.Info)
+    object Detail : Screen("detail/{eventId}", "详情", Icons.Default.Info) {
+        fun createRoute(eventId: Long) = "detail/$eventId"
+    }
     object Settings : Screen("settings", "我的", Icons.Default.Settings)
     object Editor : Screen("editor", "编辑", Icons.Default.Add)
 }
@@ -59,12 +64,13 @@ fun MainApp(eventViewModel: EventViewModel = viewModel()) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (currentDestination?.route in listOf(Screen.Home.route, Screen.Detail.route, Screen.Settings.route)) {
+            // Only show bottom bar on main screens
+            if (currentDestination?.route == Screen.Home.route || currentDestination?.route == Screen.Settings.route) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp
                 ) {
-                    val items = listOf(Screen.Home, Screen.Detail, Screen.Settings)
+                    val items = listOf(Screen.Home, Screen.Settings)
                     items.forEach { screen ->
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.label) },
@@ -81,6 +87,16 @@ fun MainApp(eventViewModel: EventViewModel = viewModel()) {
                             }
                         )
                     }
+                    NavigationBarItem(
+                        icon = { Icon(Screen.Detail.icon, contentDescription = Screen.Detail.label) },
+                        label = { Text(Screen.Detail.label) },
+                        selected = currentDestination?.route?.startsWith("detail") == true,
+                        onClick = {
+                            if (events.isNotEmpty()) {
+                                navController.navigate(Screen.Detail.createRoute(events.first().id))
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -88,16 +104,26 @@ fun MainApp(eventViewModel: EventViewModel = viewModel()) {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(if (currentDestination?.route == Screen.Editor.route) PaddingValues(0.dp) else innerPadding)
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = { fadeIn(tween(400)) },
+            exitTransition = { fadeOut(tween(400)) }
         ) {
             composable(route = Screen.Home.route) {
-                HomeScreen(
-                    events = events,
-                    onAddClick = { navController.navigate(Screen.Editor.route) },
-                    onEventClick = { /* TODO: Open Detail */ }
-                )
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    HomeScreen(
+                        events = events,
+                        onAddClick = { navController.navigate(Screen.Editor.route) },
+                        onEventClick = { event -> 
+                            navController.navigate(Screen.Detail.createRoute(event.id))
+                        }
+                    )
+                }
             }
-            composable(route = Screen.Editor.route) {
+            composable(
+                route = Screen.Editor.route,
+                enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
+                exitTransition = { fadeOut() + slideOutVertically(targetOffsetY = { it }) }
+            ) {
                 com.kippu.trace.ui.screens.EditorScreen(
                     onDismiss = { navController.popBackStack() },
                     onSave = { newEvent ->
@@ -106,14 +132,24 @@ fun MainApp(eventViewModel: EventViewModel = viewModel()) {
                     }
                 )
             }
-            composable(route = Screen.Detail.route) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Text(text = "详情页流转", modifier = Modifier.padding(16.dp))
-                }
+            composable(
+                route = Screen.Detail.route,
+                arguments = listOf(androidx.navigation.navArgument("eventId") { type = androidx.navigation.NavType.LongType }),
+                enterTransition = { fadeIn(tween(500)) },
+                exitTransition = { fadeOut(tween(500)) }
+            ) { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
+                com.kippu.trace.ui.screens.DetailScreen(
+                    events = events,
+                    initialEventId = eventId,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(route = Screen.Settings.route) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Text(text = "设置", modifier = Modifier.padding(16.dp))
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        Text(text = "设置", modifier = Modifier.padding(16.dp))
+                    }
                 }
             }
         }
