@@ -16,9 +16,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
@@ -44,6 +50,7 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     events: List<DateEvent>,
@@ -52,13 +59,14 @@ fun DetailScreen(
 ) {
     val view = LocalView.current
     var showControls by remember { mutableStateOf(false) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     if (!view.isInEditMode) {
         DisposableEffect(androidx.compose.foundation.isSystemInDarkTheme()) {
             val window = (view.context as Activity).window
             val insetsController = WindowCompat.getInsetsController(window, view)
             
-            // Initial state: Force light icons (appearance light = false) for dark immersive background
             val originalStatusBarLight = insetsController.isAppearanceLightStatusBars
             val originalNavBarLight = insetsController.isAppearanceLightNavigationBars
             
@@ -66,7 +74,6 @@ fun DetailScreen(
             insetsController.isAppearanceLightNavigationBars = false
             
             onDispose {
-                // Restore original state when leaving the screen
                 insetsController.isAppearanceLightStatusBars = originalStatusBarLight
                 insetsController.isAppearanceLightNavigationBars = originalNavBarLight
             }
@@ -108,7 +115,8 @@ fun DetailScreen(
             VerticalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                key = { events[it].id }
+                key = { events[it].id },
+                userScrollEnabled = !showBottomSheet
             ) { pageIndex ->
                 EventDetailItem(event = events[pageIndex])
             }
@@ -148,7 +156,112 @@ fun DetailScreen(
                 
                 IconButtonWithPulse(
                     icon = Icons.Default.MoreVert,
-                    onClick = { /* TODO: Functionality */ }
+                    onClick = { 
+                        showBottomSheet = true
+                    }
+                )
+            }
+        }
+
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState,
+                containerColor = Color.Transparent,
+                dragHandle = null,
+                scrimColor = Color.Black.copy(alpha = 0.4f),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 32.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 12.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            DetailActionItem(
+                                icon = Icons.Default.SaveAlt,
+                                title = "保存图片",
+                                subtitle = "保存为不含 UI 的纯净长图",
+                                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                                onClick = { showBottomSheet = false }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 24.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DetailActionItem(
+                                icon = Icons.Default.Image,
+                                title = "更换背景",
+                                subtitle = "从相册选择新的背景图",
+                                shape = RectangleShape,
+                                onClick = { showBottomSheet = false }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 24.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DetailActionItem(
+                                icon = Icons.Default.CalendarMonth,
+                                title = "调整日期",
+                                subtitle = "修改此事件的目标日期",
+                                shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+                                onClick = { showBottomSheet = false }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DetailActionItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    shape: Shape,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        shape = shape, // Applying shape to the surface to clip the ripple
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(20.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
                 )
             }
         }
@@ -223,7 +336,6 @@ fun EventDetailItem(event: DateEvent) {
         )
     }
 
-    // Ticker for H/M/S
     LaunchedEffect(event.id) {
         while (true) {
             detailedTime = TimeUtils.getDetailedTime(event.targetDate)
