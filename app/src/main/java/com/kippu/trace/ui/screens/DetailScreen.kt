@@ -3,20 +3,30 @@ package com.kippu.trace.ui.screens
 import android.app.Activity
 import android.os.Build
 import android.view.WindowManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +37,7 @@ import coil.compose.AsyncImage
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.utils.TimeUtils
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -40,8 +51,10 @@ fun DetailScreen(
     onBack: () -> Unit
 ) {
     val view = LocalView.current
+    var showControls by remember { mutableStateOf(false) }
+
     if (!view.isInEditMode) {
-        DisposableEffect(isSystemInDarkTheme()) {
+        DisposableEffect(androidx.compose.foundation.isSystemInDarkTheme()) {
             val window = (view.context as Activity).window
             val insetsController = WindowCompat.getInsetsController(window, view)
             
@@ -82,14 +95,115 @@ fun DetailScreen(
 
     androidx.activity.compose.BackHandler(onBack = onBack)
 
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-        VerticalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            key = { events[it].id }
-        ) { pageIndex ->
-            EventDetailItem(event = events[pageIndex])
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+        ) {
+            showControls = !showControls
         }
+    ) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+            VerticalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { events[it].id }
+            ) { pageIndex ->
+                EventDetailItem(event = events[pageIndex])
+            }
+        }
+
+        // Dark Overlay when controls are shown
+        AnimatedVisibility(
+            visible = showControls,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+            )
+        }
+
+        // Top Controls
+        AnimatedVisibility(
+            visible = showControls,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButtonWithPulse(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    onClick = { onBack() }
+                )
+                
+                IconButtonWithPulse(
+                    icon = Icons.Default.MoreVert,
+                    onClick = { /* TODO: Functionality */ }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun IconButtonWithPulse(
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isClicked by remember { mutableStateOf(false) }
+    val pulseScale = remember { Animatable(1f) }
+    val pulseAlpha = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(isClicked) {
+        if (isClicked) {
+            pulseScale.snapTo(1f)
+            pulseAlpha.snapTo(0.5f)
+            scope.launch {
+                pulseScale.animateTo(2f, tween(400, easing = LinearOutSlowInEasing))
+            }
+            scope.launch {
+                pulseAlpha.animateTo(0f, tween(400))
+            }
+            isClicked = false
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                isClicked = true
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .scale(pulseScale.value)
+                .alpha(pulseAlpha.value)
+                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White
+        )
     }
 }
 
