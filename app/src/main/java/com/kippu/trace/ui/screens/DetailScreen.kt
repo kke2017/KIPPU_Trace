@@ -470,7 +470,10 @@ fun EventDetailItem(
     // Combined effect for date changes and screen entry/paging
     LaunchedEffect(event.id, event.targetDate, isCurrentPage) {
         if (isCurrentPage) {
-            animatedDays.snapTo(0f)
+            // Check if we need to start from current value or reset
+            if (animatedDays.value == 0f || animatedDays.value > days) {
+                animatedDays.snapTo(0f)
+            }
             animatedDays.animateTo(
                 targetValue = days.toFloat(),
                 animationSpec = tween(durationMillis = 800)
@@ -514,40 +517,83 @@ fun EventDetailItem(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding() 
+                .statusBarsPadding()
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val prefix = if (event.isFuture) "还有" else "已经"
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = event.title,
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Light,
-                        letterSpacing = 4.sp
+            val titleLength = event.title.length
+
+            if (titleLength > 9) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                ) {
+                    Text(
+                        text = event.title,
+                        color = Color.White,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Light,
+                            letterSpacing = 4.sp
+                        )
                     )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = prefix,
-                    color = Color.White.copy(alpha = 0.7f),
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light)
-                )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = prefix,
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = event.title,
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Light,
+                            letterSpacing = 4.sp
+                        ),
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = prefix,
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            val daysStr = days.toString()
+            val fontSize = when {
+                daysStr.length >= 8 -> 60.sp
+                daysStr.length >= 7 -> 72.sp
+                daysStr.length >= 6 -> 88.sp
+                daysStr.length >= 5 -> 100.sp
+                else -> 120.sp
+            }
+
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = animatedDays.value.toInt().toString(),
                     style = MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 120.sp,
+                        fontSize = fontSize,
                         fontWeight = FontWeight.Bold,
                         fontFamily = com.kippu.trace.ui.theme.NumberFontFamily,
-                        color = Color.White
-                    )
+                        color = Color.White,
+                        fontFeatureSettings = "tnum"
+                    ),
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
             
@@ -567,7 +613,8 @@ fun EventDetailItem(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     color = Color.White.copy(alpha = 0.8f),
                     fontFamily = com.kippu.trace.ui.theme.NumberFontFamily,
-                    letterSpacing = 4.sp
+                    letterSpacing = 4.sp,
+                    fontFeatureSettings = "tnum"
                 )
             )
         }
