@@ -523,53 +523,38 @@ fun EventDetailItem(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val prefix = if (event.isFuture) "还有" else "已经"
-            val titleLength = event.title.length
-
-            if (titleLength > 9) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 32.dp)
-                ) {
-                    Text(
-                        text = event.title,
-                        color = Color.White,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Light,
-                            letterSpacing = 4.sp
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = prefix,
-                        color = Color.White.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
+            
+            // 构造每9字换行且前缀紧跟末尾的标题（总长限35字）
+            val annotatedTitle = remember(event.title, prefix) {
+                val displayTitle = if (event.title.length > 35) {
+                    event.title.take(32) + "..."
+                } else {
+                    event.title
                 }
-            } else {
-                Row(
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = event.title,
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Light,
-                            letterSpacing = 4.sp
-                        ),
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = prefix,
-                        color = Color.White.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light)
-                    )
+                
+                androidx.compose.ui.text.buildAnnotatedString {
+                    val chunks = displayTitle.chunked(9)
+                    chunks.forEachIndexed { index, chunk ->
+                        append(chunk)
+                        if (index < chunks.size - 1) append("\n")
+                    }
+                    append(" ")
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color.White.copy(alpha = 0.7f)))
+                    append(prefix)
+                    pop()
                 }
             }
+
+            Text(
+                text = annotatedTitle,
+                color = Color.White,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 4.sp
+                ),
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -588,12 +573,8 @@ fun EventDetailItem(
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontSize = fontSize,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = com.kippu.trace.ui.theme.NumberFontFamily,
-                        color = Color.White,
-                        fontFeatureSettings = "tnum"
-                    ),
-                    maxLines = 1,
-                    softWrap = false
+                        color = Color.White
+                    )
                 )
             }
             
@@ -612,9 +593,7 @@ fun EventDetailItem(
                 text = String.format(Locale.getDefault(), "%02d:%02d:%02d", detailedTime.hours, detailedTime.minutes, detailedTime.seconds),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     color = Color.White.copy(alpha = 0.8f),
-                    fontFamily = com.kippu.trace.ui.theme.NumberFontFamily,
-                    letterSpacing = 4.sp,
-                    fontFeatureSettings = "tnum"
+                    letterSpacing = 4.sp
                 )
             )
         }
