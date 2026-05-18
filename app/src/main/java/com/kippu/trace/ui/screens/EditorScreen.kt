@@ -6,11 +6,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -25,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,7 +66,10 @@ fun EditorScreen(
     onSave: (DateEvent) -> Unit
 ) {
     val context = LocalContext.current
-    var title by remember { mutableStateOf("") }
+    
+    // 使用新版 TextFieldState，这是解决光标拖拽顺滑滚动的关键
+    val titleState = rememberTextFieldState("")
+    
     var selectedDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var backgroundUri by remember { mutableStateOf<String?>(null) }
     var isPinned by remember { mutableStateOf(false) }
@@ -157,7 +170,7 @@ fun EditorScreen(
                 actions = {
                     IconButton(onClick = {
                         onSave(DateEvent(
-                            title = title.ifEmpty { "未命名" },
+                            title = titleState.text.toString().ifEmpty { "未命名" },
                             targetDate = selectedDate,
                             isFuture = mode == DisplayMode.COUNT_DOWN,
                             mode = mode,
@@ -180,26 +193,58 @@ fun EditorScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("标题") },
-                placeholder = { Text("给这一刻起个名字") },
-                supportingText = {
-                    val visualWidth = TextUtils.getVisualWidth(title)
-                    val isPureEnglish = title.all { char -> char.code in 0..127 }
-                    val typeStr = if (isPureEnglish) "英文/数字" else "中文字符"
-                    Text(
-                        text = "当前视觉宽度: ${visualWidth.toInt()} ($typeStr)",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                        style = MaterialTheme.typography.labelSmall
+            // 自定义输入框实现方案：锁定宽度，允许内部滚动
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (titleState.text.isEmpty()) {
+                        Text(
+                            text = "给这一刻起个名字",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    
+                    // 使用新版 BasicTextField (TextField2 API)
+                    BasicTextField(
+                        state = titleState,
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        textStyle = TextStyle(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true
-            )
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // 辅助文本部分
+                val currentTitle = titleState.text.toString()
+                val visualWidth = TextUtils.getVisualWidth(currentTitle)
+                val isPureEnglish = currentTitle.all { char -> char.code in 0..127 }
+                val typeStr = if (isPureEnglish) "英文/数字" else "中文字符"
+                Text(
+                    text = "当前视觉宽度: ${visualWidth.toInt()} ($typeStr)",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -267,7 +312,7 @@ fun EditorScreen(
                     Text("置顶效果", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                     PinnedEventCard(
                         event = DateEvent(
-                            title = title.ifEmpty { "示例标题" },
+                            title = titleState.text.toString().ifEmpty { "示例标题" },
                             targetDate = selectedDate,
                             isFuture = mode == DisplayMode.COUNT_DOWN,
                             mode = mode,
@@ -289,7 +334,7 @@ fun EditorScreen(
                             .background(Color.Black)
                     ) {
                         FullScreenPreviewContent(
-                            title = title.ifEmpty { "示例标题" },
+                            title = titleState.text.toString().ifEmpty { "示例标题" },
                             days = days.toString(),
                             imageUri = backgroundUri,
                             opacity = maskOpacity,
