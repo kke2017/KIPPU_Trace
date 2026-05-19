@@ -50,7 +50,6 @@ import androidx.core.view.WindowCompat
 import coil.compose.AsyncImage
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
-import com.kippu.trace.ui.theme.YunliWhite
 import com.kippu.trace.utils.FileUtils
 import com.kippu.trace.utils.TimeUtils
 import kotlinx.coroutines.delay
@@ -278,7 +277,7 @@ fun DetailScreen(
             ) {
                 Surface(
                     shape = RoundedCornerShape(28.dp),
-                    color = YunliWhite,
+                    color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp,
                     modifier = Modifier
                         .width(320.dp) // Set custom width for the white container
@@ -294,7 +293,7 @@ fun DetailScreen(
                             headline = null,
                             showModeToggle = false,
                             colors = DatePickerDefaults.colors(
-                                containerColor = YunliWhite,
+                                containerColor = MaterialTheme.colorScheme.surface,
                                 dividerColor = Color.Transparent
                             ),
                             modifier = Modifier.scale(1.0f) // Scale down internal content slightly

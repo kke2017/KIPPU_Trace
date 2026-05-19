@@ -47,7 +47,6 @@ import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
 import com.kippu.trace.ui.components.PinnedEventCard
 import com.kippu.trace.ui.theme.KIPPU_TraceTheme
-import com.kippu.trace.ui.theme.YunliWhite
 import com.kippu.trace.utils.FileUtils
 import com.kippu.trace.utils.TextUtils
 import java.time.Instant
@@ -114,7 +113,7 @@ fun EditorScreen(
         ) {
             Surface(
                 shape = RoundedCornerShape(28.dp),
-                color = YunliWhite,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp,
                 modifier = Modifier
                     .width(320.dp)
@@ -130,7 +129,7 @@ fun EditorScreen(
                         headline = null,
                         showModeToggle = false,
                         colors = DatePickerDefaults.colors(
-                            containerColor = YunliWhite,
+                            containerColor = MaterialTheme.colorScheme.surface,
                             dividerColor = Color.Transparent
                         ),
                         modifier = Modifier.scale(1.0f)

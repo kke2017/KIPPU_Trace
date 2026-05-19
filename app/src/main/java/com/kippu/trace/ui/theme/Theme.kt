@@ -10,19 +10,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Primary,
-    secondary = Secondary,
-    tertiary = Tertiary,
-    background = OnBackground,
-    surface = OnSurface,
-    onPrimary = OnPrimary,
-    onSecondary = OnSecondary,
-    onTertiary = OnTertiary, // Wait, I didn't define OnTertiary, let me fix Color.kt later or use Tertiary
-    onBackground = Background,
-    onSurface = Surface,
-)
-
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
     secondary = Secondary,
@@ -36,6 +23,19 @@ private val LightColorScheme = lightColorScheme(
     onSurface = OnSurface,
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = DarkPrimary,
+    secondary = DarkSecondary,
+    tertiary = DarkTertiary,
+    background = DarkBackground,
+    surface = DarkSurface,
+    onPrimary = DarkOnPrimary,
+    onSecondary = DarkOnSecondary,
+    onTertiary = DarkBackground,
+    onBackground = DarkOnBackground,
+    onSurface = DarkOnSurface,
+)
+
 @Composable
 fun KIPPU_TraceTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -46,12 +46,10 @@ fun KIPPU_TraceTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Use transparent status bar for edge-to-edge
             window.statusBarColor = android.graphics.Color.TRANSPARENT
             window.navigationBarColor = android.graphics.Color.TRANSPARENT
-            
+
             val insetsController = WindowCompat.getInsetsController(window, view)
-            // If not in dark theme, icons should be dark (appearance light status bars = true)
             insetsController.isAppearanceLightStatusBars = !darkTheme
             insetsController.isAppearanceLightNavigationBars = !darkTheme
         }

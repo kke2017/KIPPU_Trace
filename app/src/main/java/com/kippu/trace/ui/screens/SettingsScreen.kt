@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Backup
@@ -19,11 +20,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kippu.trace.utils.ThemeMode
+import com.kippu.trace.utils.ThemePreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    onThemeModeChange: (ThemeMode) -> Unit = {},
 ) {
     val context = LocalContext.current
     val versionName = remember {
@@ -35,25 +40,87 @@ fun SettingsScreen(
     }
     val showDevelopingDialog = remember { mutableStateOf(false) }
     val developingFeatureName = remember { mutableStateOf("") }
+    val showThemeDialog = remember { mutableStateOf(false) }
 
     if (showDevelopingDialog.value) {
         AlertDialog(
-            onDismissRequest = { 
-                showDevelopingDialog.value = false 
-            },
+            onDismissRequest = { showDevelopingDialog.value = false },
             title = { Text("提示") },
-            text = { 
-                val text = if (developingFeatureName.value == "关于时痕") 
-                    "时痕 (TimeTrace)\nMaintained by KIPPU" 
-                else 
+            text = {
+                val text = if (developingFeatureName.value == "关于时痕")
+                    "时痕 (TimeTrace)\nMaintained by KIPPU"
+                else
                     "“${developingFeatureName.value}”功能正在开发中，敬请期待！"
-                Text(text) 
+                Text(text)
             },
             confirmButton = {
-                TextButton(onClick = { 
-                    showDevelopingDialog.value = false 
-                }) {
+                TextButton(onClick = { showDevelopingDialog.value = false }) {
                     Text("确定")
+                }
+            }
+        )
+    }
+
+    if (showThemeDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showThemeDialog.value = false },
+            title = { Text("深色模式") },
+            text = {
+                Column {
+                    ThemeMode.entries.forEach { mode ->
+                        val isSelected = mode == themeMode
+                        Surface(
+                            onClick = {
+                                onThemeModeChange(mode)
+                                showThemeDialog.value = false
+                            },
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                Color.Transparent,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = ThemePreferences.themeModeLabel(mode),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected)
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                        if (mode != ThemeMode.entries.last()) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showThemeDialog.value = false }) {
+                    Text("关闭")
                 }
             }
         )
@@ -63,11 +130,11 @@ fun SettingsScreen(
         modifier = modifier,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
-                        "我的", 
+                        "我的",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -84,24 +151,23 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            
+
             item {
                 SettingsSection(title = "通用设置") {
                     SettingsItem(
                         title = "深色模式",
                         icon = Icons.Default.DarkMode,
-                        subtitle = "跟随系统"
-                    ) { 
-                        developingFeatureName.value = "深色模式"
-                        showDevelopingDialog.value = true 
+                        subtitle = ThemePreferences.themeModeLabel(themeMode)
+                    ) {
+                        showThemeDialog.value = true
                     }
                     SettingsItem(
                         title = "主题配色",
                         icon = Icons.Default.Palette,
                         subtitle = "时痕经典"
-                    ) { 
+                    ) {
                         developingFeatureName.value = "主题配色"
-                        showDevelopingDialog.value = true 
+                        showDevelopingDialog.value = true
                     }
                 }
             }
@@ -112,9 +178,9 @@ fun SettingsScreen(
                         title = "数据备份与恢复",
                         icon = Icons.Default.Backup,
                         subtitle = "本地导入/导出"
-                    ) { 
+                    ) {
                         developingFeatureName.value = "数据备份与恢复"
-                        showDevelopingDialog.value = true 
+                        showDevelopingDialog.value = true
                     }
                 }
             }
@@ -125,13 +191,13 @@ fun SettingsScreen(
                         title = "关于时痕",
                         icon = Icons.Default.ChevronRight,
                         subtitle = "v$versionName Stable"
-                    ) { 
+                    ) {
                         developingFeatureName.value = "关于时痕"
-                        showDevelopingDialog.value = true 
+                        showDevelopingDialog.value = true
                     }
                 }
             }
-            
+
             item {
                 Column(
                     modifier = Modifier
@@ -155,7 +221,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            
+
             item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }

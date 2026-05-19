@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -36,6 +37,8 @@ import androidx.navigation.compose.rememberNavController
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
 import com.kippu.trace.ui.theme.KIPPU_TraceTheme
+import com.kippu.trace.utils.ThemeMode
+import com.kippu.trace.utils.ThemePreferences
 import com.kippu.trace.viewmodel.EventViewModel
 import kotlinx.coroutines.launch
 
@@ -46,9 +49,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             val eventViewModel: EventViewModel = viewModel()
             val events by eventViewModel.allEvents.collectAsState()
-            KIPPU_TraceTheme {
+            val context = this
+            var themeMode by remember { mutableStateOf(ThemePreferences.getThemeMode(context)) }
+            val darkTheme = when (themeMode) {
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+            KIPPU_TraceTheme(darkTheme = darkTheme) {
                 MainApp(
                     events = events,
+                    themeMode = themeMode,
+                    onThemeModeChange = { mode ->
+                        themeMode = mode
+                        ThemePreferences.setThemeMode(context, mode)
+                    },
                     onAddEvent = { eventViewModel.addEvent(it) },
                     onDeleteEvent = { eventViewModel.deleteEvent(it) }
                 )
@@ -69,6 +84,8 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 @Composable
 fun MainApp(
     events: List<DateEvent> = emptyList(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    onThemeModeChange: (ThemeMode) -> Unit = {},
     onAddEvent: (DateEvent) -> Unit = {},
     onDeleteEvent: (DateEvent) -> Unit = {},
 ) {
@@ -124,7 +141,10 @@ fun MainApp(
                 )
             }
             composable(route = Screen.Settings.route) {
-                com.kippu.trace.ui.screens.SettingsScreen()
+                com.kippu.trace.ui.screens.SettingsScreen(
+                    themeMode = themeMode,
+                    onThemeModeChange = onThemeModeChange
+                )
             }
         }
 
