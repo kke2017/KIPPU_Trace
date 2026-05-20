@@ -17,4 +17,12 @@ class EventRepository(private val eventDao: EventDao) {
     suspend fun getEventById(id: Long): DateEvent? {
         return eventDao.getEventById(id)
     }
+
+    suspend fun getAllEventsOnce(): List<DateEvent> {
+        return eventDao.getAllEventsOnce()
+    }
+
+    suspend fun deleteAllAndInsertAll(events: List<DateEvent>) {
+        eventDao.deleteAllAndInsertAll(events)
+    }
 }

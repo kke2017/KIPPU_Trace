@@ -18,6 +18,21 @@ interface EventDao {
 
     @Query("SELECT * FROM date_events WHERE id = :id")
     suspend fun getEventById(id: Long): DateEvent?
+
+    @Query("SELECT * FROM date_events ORDER BY id ASC")
+    suspend fun getAllEventsOnce(): List<DateEvent>
+
+    @Query("DELETE FROM date_events")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(events: List<DateEvent>)
+
+    @Transaction
+    suspend fun deleteAllAndInsertAll(events: List<DateEvent>) {
+        deleteAll()
+        insertAll(events)
+    }
 }
 
 @Database(entities = [DateEvent::class], version = 1, exportSchema = false)

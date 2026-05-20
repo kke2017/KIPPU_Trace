@@ -1,5 +1,8 @@
 package com.kippu.trace.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,8 +23,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kippu.trace.utils.ThemeMode
 import com.kippu.trace.utils.ThemePreferences
+import com.kippu.trace.viewmodel.EventViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,9 +43,45 @@ fun SettingsScreen(
             "1.0.0"
         }
     }
+    val eventViewModel: EventViewModel = viewModel()
     val showDevelopingDialog = remember { mutableStateOf(false) }
     val developingFeatureName = remember { mutableStateOf("") }
     val showThemeDialog = remember { mutableStateOf(false) }
+
+    // Backup dialogs
+    val showBackupDialog = remember { mutableStateOf(false) }
+    val showImportConfirmDialog = remember { mutableStateOf(false) }
+    val backupResultMessage = remember { mutableStateOf<String?>(null) }
+    val backupResultIsError = remember { mutableStateOf(false) }
+    val isBackupWorking = remember { mutableStateOf(false) }
+
+    // Export launcher: let user choose name and location
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri: Uri? ->
+        uri?.let {
+            isBackupWorking.value = true
+            eventViewModel.exportBackup(it) { success, message ->
+                isBackupWorking.value = false
+                backupResultIsError.value = !success
+                backupResultMessage.value = message
+            }
+        }
+    }
+
+    // Import launcher: let user pick a .zip file
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            isBackupWorking.value = true
+            eventViewModel.importBackup(it) { success, message ->
+                isBackupWorking.value = false
+                backupResultIsError.value = !success
+                backupResultMessage.value = message
+            }
+        }
+    }
 
     if (showDevelopingDialog.value) {
         AlertDialog(
@@ -75,7 +116,7 @@ fun SettingsScreen(
                                 showThemeDialog.value = false
                             },
                             color = if (isSelected)
-                                MaterialTheme.colorScheme.primaryContainer
+                                MaterialTheme.colorScheme.surfaceVariant
                             else
                                 Color.Transparent,
                             shape = RoundedCornerShape(12.dp),
@@ -121,6 +162,130 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { showThemeDialog.value = false }) {
                     Text("关闭")
+                }
+            }
+        )
+    }
+
+    // Backup action dialog
+    if (showBackupDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showBackupDialog.value = false },
+            title = { Text("数据备份与恢复") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        onClick = {
+                            showBackupDialog.value = false
+                            exportLauncher.launch("backup_${System.currentTimeMillis()}.zip")
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "导出备份",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = "保存为 ZIP",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Surface(
+                        onClick = {
+                            showBackupDialog.value = false
+                            showImportConfirmDialog.value = true
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "导入备份",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = "从 ZIP 恢复",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showBackupDialog.value = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // Import confirmation dialog
+    if (showImportConfirmDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showImportConfirmDialog.value = false },
+            title = { Text("确认导入") },
+            text = {
+                Text("导入备份将替换当前所有数据，此操作不可撤销。确定继续吗？")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImportConfirmDialog.value = false
+                    importLauncher.launch(arrayOf("application/zip", "*/*"))
+                }) {
+                    Text("确定导入")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportConfirmDialog.value = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // Working dialog
+    if (isBackupWorking.value) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("请稍候") },
+            text = { Text("正在处理，请稍候...") },
+            confirmButton = {}
+        )
+    }
+
+    // Result dialog
+    if (backupResultMessage.value != null) {
+        AlertDialog(
+            onDismissRequest = { backupResultMessage.value = null },
+            title = {
+                Text(if (backupResultIsError.value) "错误" else "完成")
+            },
+            text = { Text(backupResultMessage.value!!) },
+            confirmButton = {
+                TextButton(onClick = { backupResultMessage.value = null }) {
+                    Text("确定")
                 }
             }
         )
@@ -179,8 +344,7 @@ fun SettingsScreen(
                         icon = Icons.Default.Backup,
                         subtitle = "本地导入/导出"
                     ) {
-                        developingFeatureName.value = "数据备份与恢复"
-                        showDevelopingDialog.value = true
+                        showBackupDialog.value = true
                     }
                 }
             }
