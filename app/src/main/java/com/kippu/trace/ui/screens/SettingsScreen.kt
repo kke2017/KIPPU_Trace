@@ -64,7 +64,7 @@ fun SettingsScreen(
     if (showThemeDialog.value) {
         AlertDialog(
             onDismissRequest = { showThemeDialog.value = false },
-            title = { Text("深色模式") },
+            title = { Text("日夜模式") },
             text = {
                 Column {
                     ThemeMode.entries.forEach { mode ->
@@ -155,7 +155,7 @@ fun SettingsScreen(
             item {
                 SettingsSection(title = "通用设置") {
                     SettingsItem(
-                        title = "深色模式",
+                        title = "日夜模式",
                         icon = Icons.Default.DarkMode,
                         subtitle = ThemePreferences.themeModeLabel(themeMode)
                     ) {

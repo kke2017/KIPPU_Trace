@@ -258,7 +258,7 @@ fun PinnedEventCard(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(16.dp)
-                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
