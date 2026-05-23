@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -92,8 +94,13 @@ fun MainApp(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val coroutineScope = rememberCoroutineScope()
+
+    val pagerState = rememberPagerState(pageCount = { 3 })
     
-    val isMainScreen = (currentDestination?.route == Screen.Home.route) || (currentDestination?.route == Screen.Settings.route)
+    // Sync current destination for bottom bar visibility
+    // Use targetPage to prevent flickering when sliding between page 0 and 2
+    val showBottomBar = currentDestination?.route == "main_pager" && pagerState.targetPage != 1
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -102,130 +109,141 @@ fun MainApp(
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
-                startDestination = Screen.Home.route,
+                startDestination = "main_pager",
                 modifier = Modifier.fillMaxSize(),
                 enterTransition = { fadeIn(tween(400)) },
                 exitTransition = { fadeOut(tween(400)) },
             ) {
-            composable(route = Screen.Home.route) {
-                com.kippu.trace.ui.screens.HomeScreen(
-                    events = events,
-                    onAddClick = { navController.navigate(Screen.Editor.route) },
-                    onEventClick = { event -> 
-                        navController.navigate(Screen.Detail.createRoute(event.id))
-                    },
-                    onDeleteEvent = onDeleteEvent,
-                )
-            }
-            composable(
-                route = Screen.Editor.route,
-                enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
-                exitTransition = { fadeOut() + slideOutVertically(targetOffsetY = { it }) },
-            ) {
-                com.kippu.trace.ui.screens.EditorScreen(
-                    onDismiss = { navController.popBackStack() },
-                    onSave = { newEvent ->
-                        onAddEvent(newEvent)
-                        navController.popBackStack()
-                    },
-                )
-            }
-            composable(
-                route = Screen.Detail.route,
-                arguments = listOf(androidx.navigation.navArgument("eventId") { type = androidx.navigation.NavType.LongType }),
-                enterTransition = { fadeIn(tween(500)) },
-                exitTransition = { fadeOut(tween(500)) },
-            ) { backStackEntry ->
-                val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
-                com.kippu.trace.ui.screens.DetailScreen(
-                    events = events,
-                    initialEventId = eventId,
-                    onBack = { navController.popBackStack() },
-                    onUpdateEvent = { onAddEvent(it) }
-                )
-            }
-            composable(route = Screen.Settings.route) {
-                com.kippu.trace.ui.screens.SettingsScreen(
-                    themeMode = themeMode,
-                    onThemeModeChange = onThemeModeChange
-                )
-            }
-        }
+                composable(route = "main_pager") {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        beyondViewportPageCount = 2
+                    ) { page ->
+                        when (page) {
+                            0 -> com.kippu.trace.ui.screens.HomeScreen(
+                                events = events,
+                                onAddClick = { navController.navigate(Screen.Editor.route) },
+                                onEventClick = { event ->
+                                    navController.navigate(Screen.Detail.createRoute(event.id))
+                                },
+                                onDeleteEvent = onDeleteEvent,
+                            )
+                            1 -> {
+                                val firstEventId = events.firstOrNull()?.id ?: 0L
+                                com.kippu.trace.ui.screens.DetailScreen(
+                                    events = events,
+                                    initialEventId = firstEventId,
+                                    onBack = { 
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(0)
+                                        }
+                                    },
+                                    onUpdateEvent = { onAddEvent(it) }
+                                )
+                            }
+                            2 -> com.kippu.trace.ui.screens.SettingsScreen(
+                                themeMode = themeMode,
+                                onThemeModeChange = onThemeModeChange
+                            )
+                        }
+                    }
+                }
 
-        AnimatedVisibility(
-            visible = isMainScreen,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp) // Lift it up slightly from the bottom
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                tonalElevation = 8.dp, // This adds a subtle shadow
-                shadowElevation = 4.dp, // For a more pronounced shadow on older Android versions/elevation
-                modifier = Modifier
-                    .width(260.dp) // Reduced container width
-                    .height(64.dp) // Reduced height
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                composable(
+                    route = Screen.Detail.route,
+                    arguments = listOf(androidx.navigation.navArgument("eventId") { type = androidx.navigation.NavType.LongType }),
+                    enterTransition = { fadeIn(tween(500)) },
+                    exitTransition = { fadeOut(tween(500)) },
+                ) { backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
+                    com.kippu.trace.ui.screens.DetailScreen(
+                        events = events,
+                        initialEventId = eventId,
+                        onBack = { 
+                            navController.popBackStack()
+                        },
+                        onUpdateEvent = { onAddEvent(it) }
+                    )
+                }
+
+                composable(
+                    route = Screen.Editor.route,
+                    enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
+                    exitTransition = { fadeOut() + slideOutVertically(targetOffsetY = { it }) },
                 ) {
-                    // Item 1: Home
-                    val isHomeSelected = currentDestination?.hierarchy?.any { it.route == Screen.Home.route } == true
-                    CustomNavBarItem(
-                        icon = { NavIconWithPulse(icon = Screen.Home.icon, isSelected = isHomeSelected) },
-                        selected = isHomeSelected,
-                        onClick = {
-                            if (!isHomeSelected) {
-                                navController.navigate(Screen.Home.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        }
+                    com.kippu.trace.ui.screens.EditorScreen(
+                        onDismiss = { navController.popBackStack() },
+                        onSave = { newEvent ->
+                            onAddEvent(newEvent)
+                            navController.popBackStack()
+                        },
                     )
+                }
+            }
 
-                    // Item 2: Detail
-                    val isDetailSelected = (currentDestination?.route?.startsWith("detail") == true)
-                    CustomNavBarItem(
-                        icon = { NavIconWithPulse(icon = Screen.Detail.icon, isSelected = isDetailSelected) },
-                        selected = isDetailSelected,
-                        onClick = {
-                            if (events.isNotEmpty()) {
-                                navController.navigate(Screen.Detail.createRoute(events.first().id)) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                    tonalElevation = 8.dp,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .width(260.dp)
+                        .height(64.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Item 1: Home
+                        val isHomeSelected = pagerState.targetPage == 0
+                        CustomNavBarItem(
+                            icon = { NavIconWithPulse(icon = Screen.Home.icon, isSelected = isHomeSelected) },
+                            selected = isHomeSelected,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(0)
                                 }
                             }
-                        }
-                    )
+                        )
 
-                    // Item 3: Settings
-                    val isSettingsSelected = currentDestination?.hierarchy?.any { it.route == Screen.Settings.route } == true
-                    CustomNavBarItem(
-                        icon = { NavIconWithPulse(icon = Screen.Settings.icon, isSelected = isSettingsSelected) },
-                        selected = isSettingsSelected,
-                        onClick = {
-                            if (!isSettingsSelected) {
-                                navController.navigate(Screen.Settings.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                        // Item 2: Detail
+                        val isDetailSelected = pagerState.targetPage == 1
+                        CustomNavBarItem(
+                            icon = { NavIconWithPulse(icon = Screen.Detail.icon, isSelected = isDetailSelected) },
+                            selected = isDetailSelected,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(1)
                                 }
                             }
-                        }
-                    )
+                        )
+
+                        // Item 3: Settings
+                        val isSettingsSelected = pagerState.targetPage == 2
+                        CustomNavBarItem(
+                            icon = { NavIconWithPulse(icon = Screen.Settings.icon, isSelected = isSettingsSelected) },
+                            selected = isSettingsSelected,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(2)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
     }
-}
 }
 
 @Composable
