@@ -1,5 +1,7 @@
 package com.kippu.trace.utils
 
+import android.content.Context
+import com.kippu.trace.R
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -52,15 +54,15 @@ object TimeUtils {
         )
     }
 
-    fun formatRelativeTime(result: RelativeTimeResult): String {
+    fun formatRelativeTime(context: Context, result: RelativeTimeResult): String {
         val parts = mutableListOf<String>()
-        if (result.years > 0) parts.add("${result.years}年")
-        if (result.months > 0) parts.add("${result.months}月")
-        if (result.weeks > 0) parts.add("${result.weeks}周")
-        if (result.days > 0) parts.add("${result.days}天")
-        
-        if (parts.isEmpty()) return "今天"
-        return parts.joinToString("")
+        if (result.years > 0) parts.add(context.getString(R.string.time_years, result.years))
+        if (result.months > 0) parts.add(context.getString(R.string.time_months, result.months))
+        if (result.weeks > 0) parts.add(context.getString(R.string.time_weeks, result.weeks))
+        if (result.days > 0) parts.add(context.getString(R.string.time_days_unit, result.days))
+
+        if (parts.isEmpty()) return context.getString(R.string.time_today)
+        return parts.joinToString(context.getString(R.string.time_separator))
     }
 
     /**

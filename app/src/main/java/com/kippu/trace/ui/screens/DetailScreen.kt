@@ -43,11 +43,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import coil.compose.AsyncImage
+import com.kippu.trace.R
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
 import com.kippu.trace.utils.FileUtils
@@ -129,7 +131,7 @@ fun DetailScreen(
 
     if (events.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("暂无数据")
+            Text(stringResource(R.string.no_data))
         }
         return
     }
@@ -224,8 +226,8 @@ fun DetailScreen(
                         Column {
                             DetailActionItem(
                                 icon = Icons.Default.SaveAlt,
-                                title = "保存图片",
-                                subtitle = "保存为不含 UI 的纯净长图",
+                                title = stringResource(R.string.save_image),
+                                subtitle = stringResource(R.string.save_image_subtitle),
                                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                                 onClick = { 
                                     showBottomSheet = false
@@ -240,8 +242,8 @@ fun DetailScreen(
                             )
                             DetailActionItem(
                                 icon = Icons.Default.Image,
-                                title = "更换背景",
-                                subtitle = "从相册选择新的背景图",
+                                title = stringResource(R.string.change_background),
+                                subtitle = stringResource(R.string.change_background_subtitle),
                                 shape = RectangleShape,
                                 onClick = { 
                                     showBottomSheet = false
@@ -255,8 +257,8 @@ fun DetailScreen(
                             )
                             DetailActionItem(
                                 icon = Icons.Default.CalendarMonth,
-                                title = "调整日期",
-                                subtitle = "修改此事件的目标日期",
+                                title = stringResource(R.string.adjust_date),
+                                subtitle = stringResource(R.string.adjust_date_subtitle),
                                 shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
                                 onClick = { 
                                     showBottomSheet = false
@@ -304,7 +306,7 @@ fun DetailScreen(
                             horizontalArrangement = Arrangement.End
                         ) {
                             TextButton(onClick = { showDatePicker = false }) {
-                                Text("取消")
+                                Text(stringResource(R.string.cancel))
                             }
                             TextButton(onClick = {
                                 val selectedMillis = datePickerState.selectedDateMillis
@@ -322,7 +324,7 @@ fun DetailScreen(
                                 }
                                 showDatePicker = false
                             }) {
-                                Text("确定")
+                                Text(stringResource(R.string.confirm))
                             }
                         }
                     }
@@ -454,9 +456,9 @@ fun EventDetailItem(
                     fileName = "TimeTrace_${event.title}_${System.currentTimeMillis()}"
                 )
                 if (success) {
-                    Toast.makeText(context, "图片已保存至相册", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.image_saved, Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.save_failed, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -521,7 +523,7 @@ fun EventDetailItem(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val prefix = if (event.isFuture) "还有" else "已经"
+            val prefix = if (event.isFuture) stringResource(R.string.label_until) else stringResource(R.string.label_since)
             
             // 构造每9字换行且前缀紧跟末尾的标题（总长限35字）
             val annotatedTitle = remember(event.title, prefix) {
@@ -577,7 +579,7 @@ fun EventDetailItem(
                 )
             }
             
-            val datePrefix = if (event.isFuture) "距离" else "自从"
+            val datePrefix = if (event.isFuture) stringResource(R.string.label_from) else stringResource(R.string.label_since_date)
             Text(
                 text = "$datePrefix $targetLocalDate",
                 style = MaterialTheme.typography.bodyMedium.copy(

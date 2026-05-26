@@ -22,6 +22,10 @@ class EventRepository(private val eventDao: EventDao) {
         return eventDao.getAllEventsOnce()
     }
 
+    suspend fun updateEvents(events: List<DateEvent>) {
+        eventDao.updateEvents(events)
+    }
+
     suspend fun deleteAllAndInsertAll(events: List<DateEvent>) {
         eventDao.deleteAllAndInsertAll(events)
     }

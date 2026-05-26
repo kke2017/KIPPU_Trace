@@ -1,9 +1,18 @@
 package com.kippu.trace
 
+import android.app.Activity
+import android.content.Context
+import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -26,12 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -39,15 +47,73 @@ import androidx.navigation.compose.rememberNavController
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
 import com.kippu.trace.ui.theme.KIPPU_TraceTheme
+import com.kippu.trace.utils.LanguageMode
+import com.kippu.trace.utils.LanguagePreferences
 import com.kippu.trace.utils.ThemeMode
 import com.kippu.trace.utils.ThemePreferences
 import com.kippu.trace.viewmodel.EventViewModel
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    
+    // 专门用于强制同步状态栏的函数
+    private fun forceUpdateSystemBars(isDark: Boolean) {
+        // 针对 ColorOS 的补丁：先用官方方法
+        enableEdgeToEdge(
+            statusBarStyle = if (isDark) {
+                SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            } else {
+                SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+            }
+        )
+        // 再用底层方法双重锁定
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.isAppearanceLightStatusBars = !isDark
+        controller.isAppearanceLightNavigationBars = !isDark
+    }
+
+    override fun attachBaseContext(newBase: Context?) {
+        val mode = LanguagePreferences.getLanguageMode(newBase!!)
+        val locale = when (mode) {
+            LanguageMode.SYSTEM -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                newBase.resources.configuration.locales[0]
+            } else {
+                @Suppress("DEPRECATION")
+                newBase.resources.configuration.locale
+            }
+            LanguageMode.CHINESE -> Locale("zh")
+            LanguageMode.ENGLISH -> Locale("en")
+        }
+
+        val localeListCompat = when (mode) {
+            LanguageMode.SYSTEM -> LocaleListCompat.getEmptyLocaleList()
+            else -> LocaleListCompat.create(locale)
+        }
+        AppCompatDelegate.setApplicationLocales(localeListCompat)
+
+        val config = Configuration(newBase.resources.configuration).apply {
+            setLocale(locale)
+        }
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        // 启动时的第一次硬性同步
+        val initialMode = ThemePreferences.getThemeMode(this)
+        val isInitialDark = when (initialMode) {
+            ThemeMode.SYSTEM -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+        }
+        
+        // ColorOS 补丁：放在 post 里确保 DecorView 已经初始化
+        window.decorView.post {
+            forceUpdateSystemBars(isInitialDark)
+        }
+
         setContent {
             val eventViewModel: EventViewModel = viewModel()
             val events by eventViewModel.allEvents.collectAsState()
@@ -58,8 +124,18 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
+
+            // 监听 darkTheme 变化，实时暴力修正
+            val view = LocalView.current
+            SideEffect {
+                if (!view.isInEditMode) {
+                    forceUpdateSystemBars(darkTheme)
+                }
+            }
+
             KIPPU_TraceTheme(darkTheme = darkTheme) {
                 MainApp(
+                    eventViewModel = eventViewModel,
                     events = events,
                     themeMode = themeMode,
                     onThemeModeChange = { mode ->
@@ -72,19 +148,32 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // 针对从后台切回来的关键点
+    override fun onResume() {
+        super.onResume()
+        val currentMode = ThemePreferences.getThemeMode(this)
+        val isDark = when (currentMode) {
+            ThemeMode.SYSTEM -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+        }
+        forceUpdateSystemBars(isDark)
+    }
 }
 
-sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    data object Home : Screen("home", "日子", Icons.Default.DateRange)
-    data object Detail : Screen("detail/{eventId}", "详情", Icons.Default.AutoAwesomeMotion) {
+sealed class Screen(val route: String, val icon: ImageVector) {
+    data object Home : Screen("home", Icons.Default.DateRange)
+    data object Detail : Screen("detail/{eventId}", Icons.Default.AutoAwesomeMotion) {
         fun createRoute(eventId: Long) = "detail/$eventId"
     }
-    data object Settings : Screen("settings", "我的", Icons.Default.Settings)
-    data object Editor : Screen("editor", "编辑", Icons.Default.Add)
+    data object Settings : Screen("settings", Icons.Default.Settings)
+    data object Editor : Screen("editor", Icons.Default.Add)
 }
 
 @Composable
 fun MainApp(
+    eventViewModel: EventViewModel? = null,
     events: List<DateEvent> = emptyList(),
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: (ThemeMode) -> Unit = {},
@@ -128,6 +217,7 @@ fun MainApp(
                                     navController.navigate(Screen.Detail.createRoute(event.id))
                                 },
                                 onDeleteEvent = onDeleteEvent,
+                                onUpdateOrder = { eventViewModel?.updateEventsOrder(it) }
                             )
                             1 -> {
                                 val firstEventId = events.firstOrNull()?.id ?: 0L
@@ -186,59 +276,60 @@ fun MainApp(
                 visible = showBottomBar,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
+                modifier = Modifier.align(Alignment.BottomCenter)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                    tonalElevation = 8.dp,
-                    shadowElevation = 4.dp,
-                    modifier = Modifier
-                        .width(260.dp)
-                        .height(64.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                // Add padding inside AnimatedVisibility to give the shadow space to render without being clipped
+                Box(modifier = Modifier.padding(bottom = 24.dp, top = 12.dp, start = 12.dp, end = 12.dp)) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                        tonalElevation = 8.dp,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .width(260.dp)
+                            .height(64.dp)
                     ) {
-                        // Item 1: Home
-                        val isHomeSelected = pagerState.targetPage == 0
-                        CustomNavBarItem(
-                            icon = { NavIconWithPulse(icon = Screen.Home.icon, isSelected = isHomeSelected) },
-                            selected = isHomeSelected,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(0)
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Item 1: Home
+                            val isHomeSelected = pagerState.targetPage == 0
+                            CustomNavBarItem(
+                                icon = { NavIconWithPulse(icon = Screen.Home.icon, isSelected = isHomeSelected) },
+                                selected = isHomeSelected,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(0)
+                                    }
                                 }
-                            }
-                        )
+                            )
 
-                        // Item 2: Detail
-                        val isDetailSelected = pagerState.targetPage == 1
-                        CustomNavBarItem(
-                            icon = { NavIconWithPulse(icon = Screen.Detail.icon, isSelected = isDetailSelected) },
-                            selected = isDetailSelected,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(1)
+                            // Item 2: Detail
+                            val isDetailSelected = pagerState.targetPage == 1
+                            CustomNavBarItem(
+                                icon = { NavIconWithPulse(icon = Screen.Detail.icon, isSelected = isDetailSelected) },
+                                selected = isDetailSelected,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(1)
+                                    }
                                 }
-                            }
-                        )
+                            )
 
-                        // Item 3: Settings
-                        val isSettingsSelected = pagerState.targetPage == 2
-                        CustomNavBarItem(
-                            icon = { NavIconWithPulse(icon = Screen.Settings.icon, isSelected = isSettingsSelected) },
-                            selected = isSettingsSelected,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(2)
+                            // Item 3: Settings
+                            val isSettingsSelected = pagerState.targetPage == 2
+                            CustomNavBarItem(
+                                icon = { NavIconWithPulse(icon = Screen.Settings.icon, isSelected = isSettingsSelected) },
+                                selected = isSettingsSelected,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(2)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }

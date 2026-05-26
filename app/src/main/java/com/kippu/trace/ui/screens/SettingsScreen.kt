@@ -12,7 +12,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Backup
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,10 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.kippu.trace.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kippu.trace.utils.LanguageMode
+import com.kippu.trace.utils.LanguagePreferences
 import com.kippu.trace.utils.ThemeMode
 import com.kippu.trace.utils.ThemePreferences
 import com.kippu.trace.viewmodel.EventViewModel
@@ -47,6 +51,8 @@ fun SettingsScreen(
     val showDevelopingDialog = remember { mutableStateOf(false) }
     val developingFeatureName = remember { mutableStateOf("") }
     val showThemeDialog = remember { mutableStateOf(false) }
+    val showLanguageDialog = remember { mutableStateOf(false) }
+    val currentLanguageMode = remember { mutableStateOf(LanguagePreferences.getLanguageMode(context)) }
 
     // Backup dialogs
     val showBackupDialog = remember { mutableStateOf(false) }
@@ -86,17 +92,17 @@ fun SettingsScreen(
     if (showDevelopingDialog.value) {
         AlertDialog(
             onDismissRequest = { showDevelopingDialog.value = false },
-            title = { Text("提示") },
+            title = { Text(stringResource(R.string.confirm)) },
             text = {
-                val text = if (developingFeatureName.value == "关于时痕")
-                    "时痕 (TimeTrace)\nMaintained by KIPPU"
+                val text = if (developingFeatureName.value == context.getString(R.string.about_app))
+                    stringResource(R.string.about_app) + "\n" + stringResource(R.string.about_maintenance)
                 else
-                    "“${developingFeatureName.value}”功能正在开发中，敬请期待！"
+                    stringResource(R.string.feature_developing, developingFeatureName.value)
                 Text(text)
             },
             confirmButton = {
                 TextButton(onClick = { showDevelopingDialog.value = false }) {
-                    Text("确定")
+                    Text(stringResource(R.string.confirm))
                 }
             }
         )
@@ -105,7 +111,7 @@ fun SettingsScreen(
     if (showThemeDialog.value) {
         AlertDialog(
             onDismissRequest = { showThemeDialog.value = false },
-            title = { Text("日夜模式") },
+            title = { Text(stringResource(R.string.theme_mode)) },
             text = {
                 Column {
                     ThemeMode.entries.forEach { mode ->
@@ -130,7 +136,7 @@ fun SettingsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = ThemePreferences.themeModeLabel(mode),
+                                    text = ThemePreferences.themeModeLabel(mode, context),
                                     style = MaterialTheme.typography.bodyLarge.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         color = if (isSelected)
@@ -161,7 +167,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showThemeDialog.value = false }) {
-                    Text("关闭")
+                    Text(stringResource(R.string.close))
                 }
             }
         )
@@ -171,7 +177,7 @@ fun SettingsScreen(
     if (showBackupDialog.value) {
         AlertDialog(
             onDismissRequest = { showBackupDialog.value = false },
-            title = { Text("数据备份与恢复") },
+            title = { Text(stringResource(R.string.backup_restore)) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -193,12 +199,12 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "导出备份",
+                                text = stringResource(R.string.backup_export),
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "保存为 ZIP",
+                                text = stringResource(R.string.save_as_zip),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -220,12 +226,12 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "导入备份",
+                                text = stringResource(R.string.backup_import),
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "从 ZIP 恢复",
+                                text = stringResource(R.string.restore_from_zip),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -235,7 +241,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showBackupDialog.value = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -245,21 +251,21 @@ fun SettingsScreen(
     if (showImportConfirmDialog.value) {
         AlertDialog(
             onDismissRequest = { showImportConfirmDialog.value = false },
-            title = { Text("确认导入") },
+            title = { Text(stringResource(R.string.confirm_import)) },
             text = {
-                Text("导入备份将替换当前所有数据，此操作不可撤销。确定继续吗？")
+                Text(stringResource(R.string.import_warning))
             },
             confirmButton = {
                 TextButton(onClick = {
                     showImportConfirmDialog.value = false
                     importLauncher.launch(arrayOf("application/zip", "*/*"))
                 }) {
-                    Text("确定导入")
+                    Text(stringResource(R.string.confirm_import_button))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showImportConfirmDialog.value = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -269,8 +275,8 @@ fun SettingsScreen(
     if (isBackupWorking.value) {
         AlertDialog(
             onDismissRequest = {},
-            title = { Text("请稍候") },
-            text = { Text("正在处理，请稍候...") },
+            title = { Text(stringResource(R.string.please_wait)) },
+            text = { Text(stringResource(R.string.processing)) },
             confirmButton = {}
         )
     }
@@ -280,12 +286,85 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { backupResultMessage.value = null },
             title = {
-                Text(if (backupResultIsError.value) "错误" else "完成")
+                Text(if (backupResultIsError.value) stringResource(R.string.error) else stringResource(R.string.complete))
             },
             text = { Text(backupResultMessage.value!!) },
             confirmButton = {
                 TextButton(onClick = { backupResultMessage.value = null }) {
-                    Text("确定")
+                    Text(stringResource(R.string.confirm))
+                }
+            }
+        )
+    }
+
+    if (showLanguageDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog.value = false },
+            title = { Text(stringResource(R.string.language_selection)) },
+            text = {
+                Column {
+                    LanguageMode.entries.forEach { mode ->
+                        val isSelected = mode == currentLanguageMode.value
+                        Surface(
+                            onClick = {
+                                currentLanguageMode.value = mode
+                                LanguagePreferences.setLanguageMode(context, mode)
+                                showLanguageDialog.value = false
+                                val activity = context as? android.app.Activity
+                                activity?.let {
+                                    it.finishAffinity()
+                                    it.startActivity(it.intent)
+                                    @Suppress("DEPRECATION")
+                                    it.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                                }
+                            },
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.surfaceVariant
+                            else
+                                Color.Transparent,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = LanguagePreferences.languageModeLabel(mode, context),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected)
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                        if (mode != LanguageMode.entries.last()) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog.value = false }) {
+                    Text(stringResource(R.string.close))
                 }
             }
         )
@@ -297,7 +376,7 @@ fun SettingsScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "我的",
+                        stringResource(R.string.settings_title),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -318,31 +397,30 @@ fun SettingsScreen(
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
             item {
-                SettingsSection(title = "通用设置") {
+                SettingsSection(title = stringResource(R.string.section_general)) {
                     SettingsItem(
-                        title = "日夜模式",
+                        title = stringResource(R.string.theme_mode),
                         icon = Icons.Default.DarkMode,
-                        subtitle = ThemePreferences.themeModeLabel(themeMode)
+                        subtitle = ThemePreferences.themeModeLabel(themeMode, context)
                     ) {
                         showThemeDialog.value = true
                     }
                     SettingsItem(
-                        title = "主题配色",
-                        icon = Icons.Default.Palette,
-                        subtitle = "时痕经典"
+                        title = stringResource(R.string.language_selection),
+                        icon = Icons.Default.Language,
+                        subtitle = LanguagePreferences.languageModeLabel(currentLanguageMode.value, context)
                     ) {
-                        developingFeatureName.value = "主题配色"
-                        showDevelopingDialog.value = true
+                        showLanguageDialog.value = true
                     }
                 }
             }
 
             item {
-                SettingsSection(title = "数据安全") {
+                SettingsSection(title = stringResource(R.string.section_data)) {
                     SettingsItem(
-                        title = "数据备份与恢复",
+                        title = stringResource(R.string.backup_restore),
                         icon = Icons.Default.Backup,
-                        subtitle = "本地导入/导出"
+                        subtitle = stringResource(R.string.local_backup_subtitle)
                     ) {
                         showBackupDialog.value = true
                     }
@@ -350,13 +428,13 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "关于") {
+                SettingsSection(title = stringResource(R.string.section_about)) {
                     SettingsItem(
-                        title = "关于时痕",
+                        title = stringResource(R.string.about_app),
                         icon = Icons.Default.ChevronRight,
                         subtitle = "v$versionName Stable"
                     ) {
-                        developingFeatureName.value = "关于时痕"
+                        developingFeatureName.value = context.getString(R.string.about_app)
                         showDevelopingDialog.value = true
                     }
                 }

@@ -3,6 +3,7 @@ package com.kippu.trace.viewmodel
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
+import com.kippu.trace.R
 import androidx.lifecycle.viewModelScope
 import com.kippu.trace.data.AppDatabase
 import com.kippu.trace.data.EventRepository
@@ -41,34 +42,42 @@ class EventViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateEventsOrder(events: List<DateEvent>) {
+        viewModelScope.launch {
+            repository.updateEvents(events)
+        }
+    }
+
     fun exportBackup(uri: Uri, onResult: (Boolean, String) -> Unit) {
+        val app = getApplication<Application>()
         viewModelScope.launch {
             try {
                 val events = withContext(Dispatchers.IO) {
                     repository.getAllEventsOnce()
                 }
                 withContext(Dispatchers.IO) {
-                    BackupManager.exportToZip(getApplication(), events, uri).getOrThrow()
+                    BackupManager.exportToZip(app, events, uri).getOrThrow()
                 }
-                onResult(true, "数据备份成功")
+                onResult(true, app.getString(R.string.backup_success))
             } catch (e: Exception) {
-                onResult(false, "备份失败: ${e.localizedMessage ?: "未知错误"}")
+                onResult(false, app.getString(R.string.backup_failed, e.localizedMessage ?: app.getString(R.string.unknown_error)))
             }
         }
     }
 
     fun importBackup(uri: Uri, onResult: (Boolean, String) -> Unit) {
+        val app = getApplication<Application>()
         viewModelScope.launch {
             try {
                 val events = withContext(Dispatchers.IO) {
-                    BackupManager.importFromZip(getApplication(), uri).getOrThrow()
+                    BackupManager.importFromZip(app, uri).getOrThrow()
                 }
                 withContext(Dispatchers.IO) {
                     repository.deleteAllAndInsertAll(events)
                 }
-                onResult(true, "数据恢复成功，已导入 ${events.size} 条记录")
+                onResult(true, app.getString(R.string.restore_success, events.size))
             } catch (e: Exception) {
-                onResult(false, "恢复失败: ${e.localizedMessage ?: "未知错误"}")
+                onResult(false, app.getString(R.string.restore_failed, e.localizedMessage ?: app.getString(R.string.unknown_error)))
             }
         }
     }

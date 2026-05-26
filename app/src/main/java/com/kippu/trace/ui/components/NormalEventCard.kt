@@ -9,9 +9,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kippu.trace.R
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.utils.TextUtils
 import com.kippu.trace.utils.TimeUtils
@@ -33,11 +36,12 @@ fun NormalEventCard(
     val today = LocalDate.now()
     val daysTotal = ChronoUnit.DAYS.between(today, targetLocalDate).let { if (it < 0) -it else it }
     
+    val context = LocalContext.current
     val relativeTime = TimeUtils.getRelativeTime(event.targetDate)
-    val timeDescription = TimeUtils.formatRelativeTime(relativeTime)
+    val timeDescription = TimeUtils.formatRelativeTime(context, relativeTime)
     
     // Semantic prefix
-    val prefix = if (event.isFuture) "还有" else "已经"
+    val prefix = if (event.isFuture) stringResource(R.string.label_until) else stringResource(R.string.label_since)
 
     val visualWidth = TextUtils.getVisualWidth(event.title)
     // 标题超过 8 个字或视觉宽度超过阈值时启用堆叠排版
@@ -96,7 +100,7 @@ fun NormalEventCard(
                         )
                     )
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.day_unit),
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = MaterialTheme.colorScheme.secondary,
                             fontSize = 12.sp
@@ -149,7 +153,7 @@ fun NormalEventCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.day_unit),
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = MaterialTheme.colorScheme.secondary,
                             fontSize = 14.sp

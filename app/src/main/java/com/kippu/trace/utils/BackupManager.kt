@@ -84,7 +84,7 @@ object BackupManager {
             val eventsFile = File(tempDir, "events.json")
             if (!eventsFile.exists()) {
                 tempDir.deleteRecursively()
-                throw IllegalStateException("无效的备份文件：未找到 events.json")
+                throw IllegalStateException("Invalid backup file: events.json not found")
             }
 
             // Copy background images

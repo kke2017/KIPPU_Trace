@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.kippu.trace.R
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
 import com.kippu.trace.ui.components.PinnedEventCard
@@ -104,6 +106,9 @@ fun EditorScreen(
         mode = if (selectedDate > System.currentTimeMillis()) DisplayMode.COUNT_DOWN else DisplayMode.ACCUMULATE
     }
 
+    val untitledText = stringResource(R.string.untitled)
+    val sampleTitleText = stringResource(R.string.sample_title)
+
     if (showDatePicker.value) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
 
@@ -140,13 +145,13 @@ fun EditorScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = { showDatePicker.value = false }) {
-                            Text("取消")
+                            Text(stringResource(R.string.cancel))
                         }
                         TextButton(onClick = {
                             datePickerState.selectedDateMillis?.let { selectedDate = it }
                             showDatePicker.value = false
                         }) {
-                            Text("确定")
+                            Text(stringResource(R.string.confirm))
                         }
                     }
                 }
@@ -157,7 +162,7 @@ fun EditorScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = "编辑时痕", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
+                title = { Text(text = stringResource(R.string.edit_timetrace), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
                         Icon(painter = rememberVectorPainter(Icons.Default.Close), contentDescription = "Cancel")
@@ -166,7 +171,7 @@ fun EditorScreen(
                 actions = {
                     IconButton(onClick = {
                         onSave(DateEvent(
-                            title = titleState.text.toString().ifEmpty { "无题" },
+                            title = titleState.text.toString().ifEmpty { untitledText },
                             targetDate = selectedDate,
                             isFuture = mode == DisplayMode.COUNT_DOWN,
                             mode = mode,
@@ -196,11 +201,12 @@ fun EditorScreen(
                         .fillMaxWidth()
                         .height(56.dp)
                         .background(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
                             RoundedCornerShape(16.dp)
                         )
                         .border(
-                            BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline),
+                            1.5.dp,
+                            MaterialTheme.colorScheme.outline,
                             RoundedCornerShape(16.dp)
                         )
                         .padding(horizontal = 16.dp),
@@ -208,7 +214,7 @@ fun EditorScreen(
                 ) {
                     if (titleState.text.isEmpty()) {
                         Text(
-                            text = "给这一刻起个名字",
+                            text = stringResource(R.string.name_this_moment),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -233,9 +239,9 @@ fun EditorScreen(
                 val currentTitle = titleState.text.toString()
                 val visualWidth = TextUtils.getVisualWidth(currentTitle)
                 val isPureEnglish = currentTitle.all { char -> char.code in 0..127 }
-                val typeStr = if (isPureEnglish) "英文/数字" else "中文字符"
+                val typeStr = if (isPureEnglish) stringResource(R.string.english_numbers_label) else stringResource(R.string.chinese_characters_label)
                 Text(
-                    text = "当前视觉宽度: ${visualWidth.toInt()} ($typeStr)",
+                    text = stringResource(R.string.visual_width_format, visualWidth.toInt().toFloat(), typeStr),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                     style = MaterialTheme.typography.labelSmall
@@ -251,7 +257,7 @@ fun EditorScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(if (mode == DisplayMode.COUNT_DOWN) "目标日期" else "起始日期", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(if (mode == DisplayMode.COUNT_DOWN) R.string.target_date_label else R.string.start_date_label), style = MaterialTheme.typography.labelMedium)
                             Text(formattedDate, style = MaterialTheme.typography.titleMedium)
                         }
                     }
@@ -263,11 +269,11 @@ fun EditorScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("背景图片", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.background_image_label), style = MaterialTheme.typography.labelMedium)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(if (backgroundUri == null) "点击选择" else "已选择", style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(if (backgroundUri == null) R.string.tap_to_select else R.string.selected_label), style = MaterialTheme.typography.titleMedium)
                             }
                         }
                     }
@@ -285,13 +291,13 @@ fun EditorScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("在首页置顶展示", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.pin_to_top), style = MaterialTheme.typography.titleSmall)
                     Switch(checked = isPinned, onCheckedChange = { isPinned = it })
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("遮罩强度", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.mask_intensity), style = MaterialTheme.typography.titleSmall)
                         Text("${(maskOpacity * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
                     }
                     Slider(
@@ -308,7 +314,7 @@ fun EditorScreen(
 
             Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("置顶效果", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                    Text(stringResource(R.string.pinned_preview), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(24.dp),
@@ -317,7 +323,7 @@ fun EditorScreen(
                         Box {
                             PinnedEventCard(
                                 event = DateEvent(
-                                    title = titleState.text.toString().ifEmpty { "示例标题" },
+                                    title = titleState.text.toString().ifEmpty { sampleTitleText },
                                     targetDate = selectedDate,
                                     isFuture = mode == DisplayMode.COUNT_DOWN,
                                     mode = mode,
@@ -332,7 +338,7 @@ fun EditorScreen(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("全屏展示", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                    Text(stringResource(R.string.fullscreen_preview), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -341,7 +347,7 @@ fun EditorScreen(
                             .background(Color.Black)
                     ) {
                         FullScreenPreviewContent(
-                            title = titleState.text.toString().ifEmpty { "示例标题" },
+                            title = titleState.text.toString().ifEmpty { sampleTitleText },
                             days = days.toString(),
                             imageUri = backgroundUri,
                             opacity = maskOpacity,
@@ -391,14 +397,14 @@ fun ModeSwitcher(
 
         Row(modifier = Modifier.fillMaxSize()) {
             ModeOption(
-                title = "倒数模式",
+                title = stringResource(R.string.countdown_mode),
                 icon = Icons.Default.HourglassEmpty,
                 selected = selectedMode == DisplayMode.COUNT_DOWN,
                 onClick = { onModeSelected(DisplayMode.COUNT_DOWN) },
                 modifier = Modifier.weight(1f)
             )
             ModeOption(
-                title = "累计模式",
+                title = stringResource(R.string.accumulate_mode),
                 icon = Icons.Default.History,
                 selected = selectedMode == DisplayMode.ACCUMULATE,
                 onClick = { onModeSelected(DisplayMode.ACCUMULATE) },
@@ -465,7 +471,7 @@ fun FullScreenPreviewContent(title: String, days: String, imageUri: String?, opa
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val prefix = if (isFuture) "还有" else "已经"
+            val prefix = if (isFuture) stringResource(R.string.label_until) else stringResource(R.string.label_since)
             
             // 构造每9字换行且前缀紧跟末尾的标题（同步 DetailScreen 逻辑）
             val annotatedTitle = remember(title, prefix) {
@@ -519,7 +525,7 @@ fun FullScreenPreviewContent(title: String, days: String, imageUri: String?, opa
                 )
             )
             
-            val datePrefix = if (isFuture) "距离" else "自从"
+            val datePrefix = if (isFuture) stringResource(R.string.label_from) else stringResource(R.string.label_since_date)
             Text(
                 text = "$datePrefix $date",
                 color = Color.White.copy(alpha = 0.6f),

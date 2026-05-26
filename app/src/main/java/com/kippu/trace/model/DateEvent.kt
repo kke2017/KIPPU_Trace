@@ -19,5 +19,6 @@ data class DateEvent(
     val mode: DisplayMode,
     val backgroundUri: String? = null,
     val isPinned: Boolean = false,
-    val maskOpacity: Float = 0.3f
+    val maskOpacity: Float = 0.3f,
+    val position: Int = 0
 )

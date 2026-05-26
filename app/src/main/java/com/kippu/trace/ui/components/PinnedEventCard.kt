@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.Hyphens
@@ -21,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.kippu.trace.R
 import com.kippu.trace.model.DateEvent
 import com.kippu.trace.model.DisplayMode
 import com.kippu.trace.utils.TextUtils
@@ -126,7 +128,7 @@ fun PinnedEventCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "天",
+                                    text = stringResource(R.string.day_unit),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontSize = 16.sp
@@ -180,7 +182,7 @@ fun PinnedEventCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "天",
+                                    text = stringResource(R.string.day_unit),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontSize = 16.sp
@@ -240,7 +242,7 @@ fun PinnedEventCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "天",
+                                    text = stringResource(R.string.day_unit),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontSize = 16.sp
@@ -262,7 +264,7 @@ fun PinnedEventCard(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "▷ 置顶",
+                    text = stringResource(R.string.pinned_label),
                     style = MaterialTheme.typography.labelMedium.copy(color = Color.White)
                 )
             }
@@ -274,7 +276,7 @@ fun PinnedEventCard(
 @Composable
 fun PinnedEventCardPreview() {
     val mockEvent = DateEvent(
-        title = "我的生日",
+        title = "Sample Birthday",
         targetDate = System.currentTimeMillis() + 86400000 * 23,
         isFuture = true,
         mode = DisplayMode.COUNT_DOWN,

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EventDao {
-    @Query("SELECT * FROM date_events ORDER BY isPinned DESC, id DESC")
+    @Query("SELECT * FROM date_events ORDER BY isPinned DESC, position ASC, id DESC")
     fun getAllEvents(): Flow<List<DateEvent>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -19,8 +19,11 @@ interface EventDao {
     @Query("SELECT * FROM date_events WHERE id = :id")
     suspend fun getEventById(id: Long): DateEvent?
 
-    @Query("SELECT * FROM date_events ORDER BY id ASC")
+    @Query("SELECT * FROM date_events ORDER BY isPinned DESC, position ASC, id DESC")
     suspend fun getAllEventsOnce(): List<DateEvent>
+
+    @Update
+    suspend fun updateEvents(events: List<DateEvent>)
 
     @Query("DELETE FROM date_events")
     suspend fun deleteAll()
@@ -35,7 +38,7 @@ interface EventDao {
     }
 }
 
-@Database(entities = [DateEvent::class], version = 1, exportSchema = false)
+@Database(entities = [DateEvent::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -50,7 +53,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "trace_database",
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

@@ -25,9 +25,9 @@ object ThemePreferences {
             .apply()
     }
 
-    fun themeModeLabel(mode: ThemeMode): String = when (mode) {
-        ThemeMode.SYSTEM -> "跟随系统"
-        ThemeMode.LIGHT -> "浅色模式"
-        ThemeMode.DARK -> "深色模式"
+    fun themeModeLabel(mode: ThemeMode, context: Context): String = when (mode) {
+        ThemeMode.SYSTEM -> context.getString(com.kippu.trace.R.string.follow_system)
+        ThemeMode.LIGHT -> context.getString(com.kippu.trace.R.string.light_mode)
+        ThemeMode.DARK -> context.getString(com.kippu.trace.R.string.dark_mode)
     }
 }
