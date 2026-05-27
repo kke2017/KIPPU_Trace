@@ -134,6 +134,14 @@ fun EditorScreen(
                         modifier = Modifier.padding(top = 20.dp, bottom = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Text(
+                            text = stringResource(R.string.select_date),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier
+                                .align(Alignment.Start)
+                                .padding(start = 20.dp, end = 20.dp, bottom = 8.dp)
+                        )
+
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center

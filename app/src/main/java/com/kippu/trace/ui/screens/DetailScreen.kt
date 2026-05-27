@@ -300,8 +300,8 @@ fun DetailScreen(
                                 text = stringResource(R.string.select_date),
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
+                                    .align(Alignment.Start)
+                                    .padding(start = 20.dp, end = 20.dp, bottom = 8.dp)
                             )
                             
                             Box(

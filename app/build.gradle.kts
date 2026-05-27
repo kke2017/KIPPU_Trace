@@ -13,15 +13,15 @@ android {
         applicationId = "com.kippu.trace"
         minSdk = 26
         targetSdk = 34 // Downgraded to 34
-        versionCode = 4
-        versionName = "2.0.0"
+        versionCode = 5
+        versionName = "2.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
