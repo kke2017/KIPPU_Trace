@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -121,37 +120,56 @@ fun EditorScreen(
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp,
                 modifier = Modifier
-                    .width(320.dp)
+                    // 手机上默认 320dp，在大屏（如 Pad）下最高可扩展至 480dp
+                    .widthIn(min = 320.dp, max = 480.dp)
+                    .fillMaxWidth(0.85f)
                     .wrapContentHeight()
             ) {
-                Column(
-                    modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp, top = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    DatePicker(
-                        state = datePickerState,
-                        title = null,
-                        headline = null,
-                        showModeToggle = false,
-                        colors = DatePickerDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            dividerColor = Color.Transparent
-                        ),
-                        modifier = Modifier.scale(1.0f)
-                    )
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val scope = this
+                    // 根据容器实际宽度计算缩放比例。360dp 是 DatePicker 完整显示所需的理想宽度。
+                    val scale = (scope.maxWidth / 360.dp).coerceIn(0.88f, 1.1f)
                     
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.End
+                    Column(
+                        modifier = Modifier.padding(top = 20.dp, bottom = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        TextButton(onClick = { showDatePicker.value = false }) {
-                            Text(stringResource(R.string.cancel))
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                                title = null,
+                                headline = null,
+                                showModeToggle = false,
+                                colors = DatePickerDefaults.colors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    dividerColor = Color.Transparent
+                                ),
+                                modifier = Modifier
+                                    // 强制指定 DatePicker 宽度为 360dp 以防止其内部日期列丢失
+                                    .requiredWidth(360.dp)
+                                    // 缩放以适配外部 Surface 容器
+                                    .scale(scale)
+                            )
                         }
-                        TextButton(onClick = {
-                            datePickerState.selectedDateMillis?.let { selectedDate = it }
-                            showDatePicker.value = false
-                        }) {
-                            Text(stringResource(R.string.confirm))
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showDatePicker.value = false }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                            TextButton(onClick = {
+                                datePickerState.selectedDateMillis?.let { selectedDate = it }
+                                showDatePicker.value = false
+                            }) {
+                                Text(stringResource(R.string.confirm))
+                            }
                         }
                     }
                 }

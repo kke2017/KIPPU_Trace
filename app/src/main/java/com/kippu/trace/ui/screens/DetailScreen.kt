@@ -282,49 +282,92 @@ fun DetailScreen(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp,
                     modifier = Modifier
-                        .width(320.dp)
+                        // 手机上默认 320dp，在大屏（如 Pad）下最高可扩展至 480dp
+                        .widthIn(min = 320.dp, max = 480.dp)
+                        .fillMaxWidth(0.85f)
                         .wrapContentHeight()
                 ) {
-                    Column(
-                        modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp, top = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        DatePicker(
-                            state = datePickerState,
-                            title = null,
-                            headline = null,
-                            showModeToggle = false,
-                            colors = DatePickerDefaults.colors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                dividerColor = Color.Transparent
-                            ),
-                            modifier = Modifier.scale(1.0f)
-                        )
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val scope = this
+                        // 根据容器实际宽度计算缩放比例。360dp 是 DatePicker 完整显示所需的理想宽度。
+                        val scale = (scope.maxWidth / 360.dp).coerceIn(0.88f, 1.1f)
                         
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.End
+                        Column(
+                            modifier = Modifier.padding(top = 20.dp, bottom = 0.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text(stringResource(R.string.cancel))
-                            }
-                            TextButton(onClick = {
-                                val selectedMillis = datePickerState.selectedDateMillis
-                                if (selectedMillis != null) {
-                                    val currentEvent = events.getOrNull(pagerState.currentPage)
-                                    if (currentEvent != null) {
-                                        val isFuture = selectedMillis > System.currentTimeMillis()
-                                        val newMode = if (isFuture) DisplayMode.COUNT_DOWN else DisplayMode.ACCUMULATE
-                                        onUpdateEvent(currentEvent.copy(
-                                            targetDate = selectedMillis,
-                                            isFuture = isFuture,
-                                            mode = newMode
-                                        ))
-                                    }
+                            Text(
+                                text = stringResource(R.string.select_date),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                            )
+                            
+                            Box(
+                                modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // 通过局部覆盖 Typography 来拉开星期与日期之间的间隙
+                                MaterialTheme(
+                                    colorScheme = MaterialTheme.colorScheme,
+                                    shapes = MaterialTheme.shapes,
+                                    typography = MaterialTheme.typography.copy(
+                                        labelLarge = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 12.sp,
+                                            lineHeight = 48.sp
+                                        )
+                                    )
+                                ) {
+                                    DatePicker(
+                                        state = datePickerState,
+                                        title = null,
+                                        headline = null,
+                                        showModeToggle = false,
+                                        colors = DatePickerDefaults.colors(
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                            dividerColor = Color.Transparent
+                                        ),
+                                        modifier = Modifier
+                                            // 强制指定 DatePicker 宽度为 360dp 以防止其内部日期列丢失
+                                            .requiredWidth(360.dp)
+                                            // 缩放以适配外部 Surface 容器
+                                            .scale(scale)
+                                            // 向上偏移，减少与标题的间距
+                                            .offset(y = (-12).dp)
+                                    )
                                 }
-                                showDatePicker = false
-                            }) {
-                                Text(stringResource(R.string.confirm))
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    // 向上偏移，减少与日历底部的间距
+                                    .offset(y = (-20).dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                                TextButton(onClick = {
+                                    val selectedMillis = datePickerState.selectedDateMillis
+                                    if (selectedMillis != null) {
+                                        val currentEvent = events.getOrNull(pagerState.currentPage)
+                                        if (currentEvent != null) {
+                                            val isFuture = selectedMillis > System.currentTimeMillis()
+                                            val newMode = if (isFuture) DisplayMode.COUNT_DOWN else DisplayMode.ACCUMULATE
+                                            onUpdateEvent(currentEvent.copy(
+                                                targetDate = selectedMillis,
+                                                isFuture = isFuture,
+                                                mode = newMode
+                                            ))
+                                        }
+                                    }
+                                    showDatePicker = false
+                                }) {
+                                    Text(stringResource(R.string.confirm))
+                                }
                             }
                         }
                     }

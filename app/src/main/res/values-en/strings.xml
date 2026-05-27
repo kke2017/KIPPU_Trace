@@ -28,7 +28,7 @@
     <string name="local_backup_subtitle">Local Import/Export</string>
     <string name="about_maintenance">Maintained by KIPPU</string>
     <string name="feature_developing">The feature "%1$s" is under development, please stay tuned!</string>
-    <string name="no_data">No data</string>
+    <string name="no_data">Please swipe left on the timeline page to add an event.</string>
     <string name="save_image">Save Image</string>
     <string name="save_image_subtitle">Save as clean long image without UI</string>
     <string name="change_background">Change Background</string>
@@ -77,4 +77,5 @@
     <string name="restore_success">Restore successful, %d record(s) imported</string>
     <string name="restore_failed">Restore failed: %s</string>
     <string name="unknown_error">Unknown error</string>
+    <string name="select_date">Select Date</string>
 </resources>

@@ -28,7 +28,7 @@
     <string name="local_backup_subtitle">本地导入/导出</string>
     <string name="about_maintenance">Maintained by KIPPU</string>
     <string name="feature_developing">"%1$s"功能正在开发中，敬请期待！</string>
-    <string name="no_data">暂无数据</string>
+    <string name="no_data">请左滑在时间轴页中添加事件</string>
     <string name="save_image">保存图片</string>
     <string name="save_image_subtitle">保存为不含 UI 的纯净长图</string>
     <string name="change_background">更换背景</string>
@@ -66,7 +66,7 @@
     <string name="accumulate_mode">累计模式</string>
     <string name="day_unit">天</string>
     <string name="pinned_label">▷ 置顶</string>
-    <string name="time_separator"></string>
+    <string name="time_separator"> </string>
     <string name="time_years">%d年</string>
     <string name="time_months">%d月</string>
     <string name="time_weeks">%d周</string>
@@ -77,4 +77,5 @@
     <string name="restore_success">数据恢复成功，已导入 %d 条记录</string>
     <string name="restore_failed">恢复失败: %s</string>
     <string name="unknown_error">未知错误</string>
+    <string name="select_date">选择日期</string>
 </resources>
