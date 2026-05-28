@@ -81,7 +81,7 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(text = "TimeTrace", style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.secondary))
+                        Text(text = "TimeTrace", modifier = Modifier.offset(x = 1.5.dp), style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.secondary))
                         Text(text = stringResource(R.string.timeline_title), style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 },
