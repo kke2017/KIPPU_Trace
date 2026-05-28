@@ -24,7 +24,7 @@
 > 你应该不再忍受那个复古的倒数日，可以看看这个小巧无广的 **TimeTrace**  
 > 主要基于极简的 **Material 3** 框架设计，还有切符的个人审美和小巧思 w
 
-同倒数日一致，本 App 旨在帮助用户记录生命中的重要时刻，无论是对未来的期待倒计时，还是对过往经历的累积日记录
+同倒数日一致，本 App 旨在帮助用户记录生命中的重要时刻，无论是未来的期待计时，还是过往经历的累积记录
 
 ## 核心特性
 
@@ -63,6 +63,6 @@ Maintained by KIPPU
 “我们都可以为岁月留下重要的刻痕”
 
 ![](./assets/HJQH-B1aoAAIJ0m.jpg)
-![](.663shots_so.png)
+![](./assets/663shots_so.png)
 ![](./assets/HJQH-CIakAAuXy5.jpg)
 ![](./assets/HJQH-DVbsAAYpXR.jpg)

@@ -15,6 +15,7 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.VerticalPager
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -62,6 +64,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +72,8 @@ fun DetailScreen(
     events: List<DateEvent>,
     initialEventId: Long,
     onBack: () -> Unit,
-    onUpdateEvent: (DateEvent) -> Unit = {}
+    onUpdateEvent: (DateEvent) -> Unit = {},
+    onNavigateToPage: ((Int) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -168,6 +172,27 @@ fun DetailScreen(
 
     Box(modifier = Modifier
         .fillMaxSize()
+        // 从卡片点进来的详情页才启用水平滑动退出 详情页不受影响
+        .pointerInput(onNavigateToPage) {
+            if (onNavigateToPage != null) {
+                var dragAccumulator = 0f
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        dragAccumulator += dragAmount
+                    },
+                    onDragEnd = {
+                        val threshold = 120f
+                        if (abs(dragAccumulator) > threshold) {
+                            // 右滑主页 左滑设置
+                            onNavigateToPage.invoke(if (dragAccumulator > 0) 0 else 2)
+                            onBack()
+                        }
+                        dragAccumulator = 0f
+                    }
+                )
+            }
+        }
         .clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null

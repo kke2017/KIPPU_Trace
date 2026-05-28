@@ -63,6 +63,6 @@ If you have any suggestions or encounter any bugs, I would love to see your Issu
 "We can all leave meaningful traces on the passage of time."
 
 ![](./assets/HJQH-B1aoAAIJ0m.jpg)
-![](.663shots_so.png)
+![](./assets/663shots_so.png)
 ![](./assets/HJQH-CIakAAuXy5.jpg)
 ![](./assets/HJQH-DVbsAAYpXR.jpg)

@@ -141,6 +141,7 @@ fun HomeScreen(
                         onTrashClick = { eventToDelete = event },
                         onEditClick = { editingEvent = event }
                     ) {
+                        // 编辑中的卡片直接读取 editingEvent 实时预览改动
                         PinnedEventCard(event = if (editingEvent?.id == event.id) editingEvent!! else event, onClick = { onEventClick(event) })
                     }
                 }
@@ -170,6 +171,7 @@ fun HomeScreen(
                 }
             }
         }
+        // 标题输入实时同步到 editingEvent 让卡片预览跟着变
         LaunchedEffect(titleState) {
             snapshotFlow { titleState.text.toString() }
                 .collect { text ->

@@ -241,10 +241,15 @@ fun MainApp(
                     com.kippu.trace.ui.screens.DetailScreen(
                         events = events,
                         initialEventId = eventId,
-                        onBack = { 
+                        onBack = {
                             navController.popBackStack()
                         },
-                        onUpdateEvent = { onAddEvent(it) }
+                        onUpdateEvent = { onAddEvent(it) },
+                        onNavigateToPage = { page ->
+                            coroutineScope.launch {
+                                pagerState.scrollToPage(page)
+                            }
+                        }
                     )
                 }
 
